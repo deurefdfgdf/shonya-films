@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Шоня Фильмсы — Фильмы, сериалы, рейтинги</title>
+    <meta name="description"
+        content="Шоня Фильмсы — лучший каталог фильмов и сериалов. Рейтинги, описания, трейлеры и многое другое.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+</head>
+
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header" id="header">
+            <div class="container header__inner">
+                <a href="index.html" class="logo" id="logo">
+                    <span class="logo__icon">🎬</span>
+                    <span class="logo__text">Шоня <span class="logo__accent">Фильмсы</span></span>
+                </a>
+                <nav class="nav" id="nav">
+                    <a href="#" class="nav__link active" data-section="home" id="nav-home">Главная</a>
+                    <a href="#" class="nav__link" data-section="popular" id="nav-popular">Популярные</a>
+                    <a href="#" class="nav__link" data-section="top250" id="nav-top250">Топ 250</a>
+                    <a href="#" class="nav__link" data-section="premieres" id="nav-premieres">Премьеры</a>
+                    <a href="#" class="nav__link" data-section="series" id="nav-series">Сериалы</a>
+                </nav>
+                <div class="header__actions">
+                    <div class="search-bar" id="search-bar">
+                        <svg class="search-bar__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <input type="text" class="search-bar__input" id="search-input" placeholder="Поиск фильмов..."
+                            autocomplete="off">
+                        <div class="search-results" id="search-results"></div>
+                    </div>
+                    <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Меню">
+                        <span></span><span></span><span></span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero" id="hero-section">
+            <div class="hero__backdrop" id="hero-backdrop"></div>
+            <div class="hero__overlay"></div>
+            <div class="container hero__content">
+                <div class="hero__badge" id="hero-badge"></div>
+                <h1 class="hero__title" id="hero-title">Загрузка...</h1>
+                <p class="hero__description" id="hero-description"></p>
+                <div class="hero__meta" id="hero-meta"></div>
+                <div class="hero__actions">
+                    <button class="btn btn--primary" id="hero-details-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"
+                            height="20">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 16v-4M12 8h.01"></path>
+                        </svg>
+                        Подробнее
+                    </button>
+                </div>
+            </div>
+            <div class="hero__nav">
+                <button class="hero__nav-btn" id="hero-prev" aria-label="Предыдущий">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m15 18-6-6 6-6"></path>
+                    </svg>
+                </button>
+                <div class="hero__dots" id="hero-dots"></div>
+                <button class="hero__nav-btn" id="hero-next" aria-label="Следующий">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m9 18 6-6-6-6"></path>
+                    </svg>
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Content -->
+        <main class="main" id="main-content">
+            <!-- Home Sections -->
+            <div id="home-sections">
+                <section class="section" id="section-popular">
+                    <div class="container">
+                        <div class="section__header">
+                            <h2 class="section__title">🔥 Популярное сейчас</h2>
+                            <button class="btn btn--ghost" data-section="popular">Все →</button>
+                        </div>
+                        <div class="films-grid films-grid--scroll" id="popular-grid"></div>
+                    </div>
+                </section>
+
+                <section class="section" id="section-top">
+                    <div class="container">
+                        <div class="section__header">
+                            <h2 class="section__title">⭐ Топ 250</h2>
+                            <button class="btn btn--ghost" data-section="top250">Все →</button>
+                        </div>
+                        <div class="films-grid films-grid--scroll" id="top-grid"></div>
+                    </div>
+                </section>
+
+                <section class="section" id="section-premieres-home">
+                    <div class="container">
+                        <div class="section__header">
+                            <h2 class="section__title">🎬 Премьеры месяца</h2>
+                            <button class="btn btn--ghost" data-section="premieres">Все →</button>
+                        </div>
+                        <div class="films-grid films-grid--scroll" id="premieres-grid"></div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Full catalog section (hidden by default) -->
+            <div id="catalog-section" class="catalog-section hidden">
+                <div class="container">
+                    <div class="catalog__header">
+                        <h2 class="section__title" id="catalog-title">Каталог</h2>
+                        <div class="catalog__filters" id="catalog-filters">
+                            <div class="filter-group">
+                                <label class="filter-label">Жанр:</label>
+                                <select class="filter-select" id="filter-genre">
+                                    <option value="">Все жанры</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">Страна:</label>
+                                <select class="filter-select" id="filter-country">
+                                    <option value="">Все страны</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">Год:</label>
+                                <select class="filter-select" id="filter-year">
+                                    <option value="">Все годы</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">Сортировка:</label>
+                                <select class="filter-select" id="filter-order">
+                                    <option value="NUM_VOTE">По количеству оценок</option>
+                                    <option value="RATING">По рейтингу</option>
+                                    <option value="YEAR">По году</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="films-grid" id="catalog-grid"></div>
+                    <div class="load-more" id="load-more">
+                        <button class="btn btn--primary btn--large" id="load-more-btn">Загрузить ещё</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Film Modal -->
+        <div class="modal" id="film-modal">
+            <div class="modal__backdrop" id="modal-backdrop"></div>
+            <div class="modal__content" id="modal-content">
+                <button class="modal__close" id="modal-close" aria-label="Закрыть">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                        <path d="M18 6 6 18M6 6l12 12"></path>
+                    </svg>
+                </button>
+                <div class="modal__body" id="modal-body">
+                    <!-- Film details will be injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="container footer__inner">
+                <div class="footer__brand">
+                    <span class="logo">
+                        <span class="logo__icon">🎬</span>
+                        <span class="logo__text">Шоня <span class="logo__accent">Фильмсы</span></span>
+                    </span>
+                    <p class="footer__tagline">Весь мир кино в одном месте 🍿</p>
+                </div>
+                <div class="footer__links">
+                    <a href="#" data-section="popular">Популярные</a>
+                    <a href="#" data-section="top250">Топ 250</a>
+                    <a href="#" data-section="premieres">Премьеры</a>
+                    <a href="#" data-section="series">Сериалы</a>
+                </div>
+                <div class="footer__copy">
+                    <p>© 2026 Шоня Фильмсы, шонька еслиты читаешь это то ты лох.</p>
+                </div>
+            </div>
+        </footer>
+
+    </div><!-- /.app -->
+
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
