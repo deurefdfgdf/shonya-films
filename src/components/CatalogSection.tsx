@@ -126,9 +126,15 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
   );
 
   const genreOptions = useMemo<Option[]>(() => {
+    const fallbackGenres = [
+      'аниме','биография','боевик','вестерн','военный','детектив','детский',
+      'документальный','драма','история','комедия','короткометражка','криминал',
+      'мелодрама','музыка','мультфильм','мюзикл','приключения','семейный',
+      'спорт','триллер','ужасы','фантастика','фильм-нуар','фэнтези',
+    ];
     const apiGenres = (filters?.genres || []).map((item) => item.genre).filter(Boolean);
     const filmGenres = rawFilms.flatMap((film) => film.genres?.map((g) => g.genre) || []).filter(Boolean);
-    const uniqueGenres = Array.from(new Set([...apiGenres, ...filmGenres]))
+    const uniqueGenres = Array.from(new Set([...fallbackGenres, ...apiGenres, ...filmGenres]))
       .sort((left, right) => left.localeCompare(right, 'ru'));
 
     return uniqueGenres.map((genre) => ({ value: genre, label: genre }));
