@@ -16,7 +16,7 @@ const NAV_ITEMS = [
   { id: 'top250', label: 'Топ 250' },
   { id: 'premieres', label: 'Премьеры' },
   { id: 'series', label: 'Сериалы' },
-  { id: 'ai', label: 'ИИ Подбор' },
+  // { id: 'ai', label: 'ИИ Подбор' }, // TODO: раскомментировать когда будет рабочий OpenRouter ключ
 ];
 
 export default function Header({ activeSection, onNavigate, onFilmClick }: HeaderProps) {
