@@ -98,7 +98,7 @@ body::after {
 }
 
 @media (pointer: fine) {
-  * {
+  .cursor-ready * {
     cursor: none !important;
   }
 }
@@ -256,11 +256,11 @@ a {
 
 .glass-panel {
   background:
-    linear-gradient(180deg, rgb(255 244 227 / 0.045) 0%, rgb(255 244 227 / 0.025) 100%),
-    rgb(10 10 10 / 0.4);
-  border: 1px solid rgb(255 244 227 / 0.09);
-  backdrop-filter: blur(22px) saturate(140%);
-  box-shadow: 0 18px 60px rgb(0 0 0 / 0.18);
+    linear-gradient(180deg, rgb(255 244 227 / 0.07) 0%, rgb(255 244 227 / 0.04) 100%),
+    rgb(10 10 10 / 0.82);
+  border: 1px solid rgb(255 244 227 / 0.13);
+  backdrop-filter: blur(28px) saturate(150%);
+  box-shadow: 0 18px 60px rgb(0 0 0 / 0.24);
 }
 
 .ghost-word {

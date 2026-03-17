@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   KinoAPI,
@@ -31,6 +31,7 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
   const [staff, setStaff] = useState<StaffPerson[]>([]);
   const [similar, setSimilar] = useState<Film[]>([]);
   const [loading, setLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!filmId) {
@@ -59,6 +60,7 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
 
   useEffect(() => {
     document.body.style.overflow = filmId ? 'hidden' : '';
+    scrollRef.current?.scrollTo(0, 0);
     return () => {
       document.body.style.overflow = '';
     };
@@ -131,8 +133,8 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                 </div>
               </div>
             ) : film ? (
-              <div className="grid max-h-[calc(100svh-2rem)] lg:grid-cols-[minmax(280px,0.72fr)_minmax(0,1.28fr)]">
-                <div className="relative min-h-[20rem] border-b border-[rgb(255_244_227_/_0.08)] lg:border-b-0 lg:border-r">
+              <div className="grid max-h-[calc(100svh-2rem)] overflow-hidden lg:grid-cols-[minmax(280px,0.72fr)_minmax(0,1.28fr)]">
+                <div className="relative max-h-[14rem] overflow-hidden border-b border-[rgb(255_244_227_/_0.08)] lg:max-h-none lg:border-b-0 lg:border-r">
                   {posterUrl ? (
                     <img
                       src={posterUrl}
@@ -163,7 +165,7 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                   </div>
                 </div>
 
-                <div className="overflow-y-auto px-6 py-6 sm:px-8 sm:py-8">
+                <div ref={scrollRef} className="overflow-y-auto overscroll-contain px-6 py-6 sm:px-8 sm:py-8">
                   <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_260px]">
                     <div>
                       <span className="eyebrow mb-4">Фильм</span>
@@ -300,6 +302,21 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                       </div>
                     </section>
                   ) : null}
+
+                  <div className="sticky bottom-0 -mx-6 mt-6 border-t border-[rgb(255_244_227_/_0.1)] bg-[rgb(9_9_9_/_0.95)] px-6 py-4 backdrop-blur-md xl:hidden">
+                    <a
+                      href={`https://www.sspoisk.ru/film/${filmId}/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="editorial-button editorial-button--solid flex w-full items-center justify-between"
+                      data-clickable
+                    >
+                      <span className="text-[0.72rem] uppercase tracking-[0.22em]">
+                        Смотреть
+                      </span>
+                      <span className="text-lg">↗</span>
+                    </a>
+                  </div>
                 </div>
               </div>
             ) : (

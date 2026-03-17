@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { id: 'top250', label: 'Топ 250' },
   { id: 'premieres', label: 'Премьеры' },
   { id: 'series', label: 'Сериалы' },
+  { id: 'ai', label: 'ИИ Подбор' },
 ];
 
 export default function Header({ activeSection, onNavigate, onFilmClick }: HeaderProps) {
@@ -128,13 +129,24 @@ export default function Header({ activeSection, onNavigate, onFilmClick }: Heade
                   onNavigate(item.id);
                   setMobileMenuOpen(false);
                 }}
-                className="relative px-4 py-3 text-[0.6rem] uppercase tracking-[0.32em] transition-colors duration-500"
+                className={`relative px-4 py-3 text-[0.6rem] uppercase tracking-[0.32em] transition-colors duration-500${
+                  item.id === 'ai' ? ' rounded-full border border-[rgb(201_184_154_/_0.2)] ml-2' : ''
+                }`}
                 style={{
-                  color: isActive ? 'var(--color-text-secondary)' : 'rgb(255 244 227 / 0.52)',
+                  color: item.id === 'ai'
+                    ? (isActive ? 'var(--color-accent)' : 'rgb(201 184 154 / 0.7)')
+                    : (isActive ? 'var(--color-text-secondary)' : 'rgb(255 244 227 / 0.52)'),
                 }}
                 data-clickable
               >
-                <span className="relative z-10">{item.label}</span>
+                <span className="relative z-10 inline-flex items-center gap-1.5">
+                  {item.id === 'ai' && (
+                    <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3" stroke="var(--color-accent)" strokeWidth="2">
+                      <path d="M12 2l2.4 7.2H22l-6 4.8 2.4 7.2L12 16.4l-6.4 4.8 2.4-7.2-6-4.8h7.6z" />
+                    </svg>
+                  )}
+                  {item.label}
+                </span>
                 {isActive ? (
                   <motion.span
                     layoutId="header-line"

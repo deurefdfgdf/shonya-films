@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
 import { type Film, getFilmTitle, formatRating } from '@/lib/api';
 
@@ -74,13 +74,41 @@ export default function Hero({ films, onDetailsClick, ready = true }: HeroProps)
     };
   }, [films.length, startTimer]);
 
+  const pauseTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
   const goTo = (nextIndex: number) => {
     setIndex(nextIndex);
     startTimer();
   };
 
+  const hoverHandlers = useMemo(() => ({
+    onMouseEnter: pauseTimer,
+    onMouseLeave: startTimer,
+  }), [pauseTimer, startTimer]);
+
   if (films.length === 0) {
-    return null;
+    return (
+      <section className="relative flex min-h-screen items-end overflow-hidden pt-[calc(var(--header-height)+1.25rem)]">
+        <div className="section-shell relative z-10 w-full pb-20">
+          <div className="max-w-[54rem]">
+            <div className="mb-6 flex gap-4">
+              <div className="skeleton-shimmer h-4 w-24 rounded-full" />
+              <div className="skeleton-shimmer h-4 w-16 rounded-full" />
+            </div>
+            <div className="skeleton-shimmer h-32 w-[5ch] rounded-[1.5rem] sm:h-44 lg:h-56" />
+            <div className="mt-6 space-y-3">
+              <div className="skeleton-shimmer h-5 w-[80%] max-w-[31rem] rounded-full" />
+              <div className="skeleton-shimmer h-5 w-[60%] max-w-[24rem] rounded-full" />
+            </div>
+          </div>
+        </div>
+      </section>
+    );
   }
 
   const film = films[index];
@@ -134,6 +162,7 @@ export default function Hero({ films, onDetailsClick, ready = true }: HeroProps)
         className="section-shell relative z-10 flex w-full pb-12 sm:pb-16 lg:pb-18"
         animate={ready ? { opacity: 1 } : { opacity: 0 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        {...hoverHandlers}
       >
         <div className="grid w-full items-end gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.48fr)] lg:gap-16 xl:gap-20">
           <AnimatePresence mode="wait">
@@ -239,8 +268,8 @@ export default function Hero({ films, onDetailsClick, ready = true }: HeroProps)
           </AnimatePresence>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 z-20">
-          <div className="flex flex-wrap items-center gap-3 pt-8">
+        <div className="relative z-20 mt-8 pb-8">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={() => goTo((index - 1 + films.length) % films.length)}

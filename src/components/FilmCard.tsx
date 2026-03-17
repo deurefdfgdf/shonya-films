@@ -35,7 +35,7 @@ export default function FilmCard({
     <motion.button
       type="button"
       onClick={() => onClick(filmId)}
-      className={`group block text-left ${compact ? 'w-[9rem]' : 'w-full'}`}
+      className={`group block text-left ${compact ? 'w-[10.5rem] shrink-0' : 'w-full'}`}
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, delay: Math.min(index * 0.05, 0.3), ease: [0.22, 1, 0.36, 1] }}
@@ -69,8 +69,8 @@ export default function FilmCard({
             className="absolute left-3 top-3 rounded-full px-3 py-1 text-[0.62rem] uppercase tracking-[0.18em]"
             style={{
               color: ratingColors[ratingClass],
-              background: 'rgb(0 0 0 / 0.38)',
-              border: '1px solid rgb(255 244 227 / 0.08)',
+              background: 'rgb(0 0 0 / 0.6)',
+              border: '1px solid rgb(255 244 227 / 0.12)',
             }}
           >
             {rating}

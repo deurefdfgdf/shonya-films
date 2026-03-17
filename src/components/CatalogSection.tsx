@@ -96,6 +96,8 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
   const defaultYearRange = useMemo<[number, number]>(() => [MIN_YEAR, currentYear], [currentYear]);
   const [yearRange, setYearRange] = useState<[number, number]>(defaultYearRange);
   const [order, setOrder] = useState<SortOrder>('NUM_VOTE');
+  const [premiereMonthOffset, setPremiereMonthOffset] = useState(0);
+  const [loadingMorePremieres, setLoadingMorePremieres] = useState(false);
 
   useEffect(() => {
     setYearRange(defaultYearRange);
@@ -124,12 +126,13 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
   );
 
   const genreOptions = useMemo<Option[]>(() => {
-    const uniqueGenres = Array.from(
-      new Set((filters?.genres || []).map((item) => item.genre).filter(Boolean))
-    ).sort((left, right) => left.localeCompare(right, 'ru'));
+    const apiGenres = (filters?.genres || []).map((item) => item.genre).filter(Boolean);
+    const filmGenres = rawFilms.flatMap((film) => film.genres?.map((g) => g.genre) || []).filter(Boolean);
+    const uniqueGenres = Array.from(new Set([...apiGenres, ...filmGenres]))
+      .sort((left, right) => left.localeCompare(right, 'ru'));
 
     return uniqueGenres.map((genre) => ({ value: genre, label: genre }));
-  }, [filters]);
+  }, [filters, rawFilms]);
 
   const countryOptions = useMemo<Option[]>(() => {
     return orderedCountries.map((item) => ({
@@ -284,6 +287,22 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
 
     return sortFilms(next, order);
   }, [defaultYearRange, order, rawFilms, selectedCountries, selectedGenres, yearRange]);
+
+  const loadMorePremieres = async () => {
+    setLoadingMorePremieres(true);
+    try {
+      const nextOffset = premiereMonthOffset + 1;
+      const now = new Date();
+      const targetDate = new Date(now.getFullYear(), now.getMonth() + nextOffset, 1);
+      const data = await KinoAPI.getPremieres(targetDate.getFullYear(), targetDate.getMonth() + 1);
+      const newFilms = data.items || [];
+      setRawFilms((current) => [...current, ...newFilms]);
+      setPremiereMonthOffset(nextOffset);
+    } catch {
+    } finally {
+      setLoadingMorePremieres(false);
+    }
+  };
 
   const showFilters = type !== 'premieres';
   const showLoadMore = page < totalPages && type !== 'premieres';
@@ -571,18 +590,24 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
           )}
         </div>
 
-        {showLoadMore && !loading ? (
+        {(showLoadMore || type === 'premieres') && !loading ? (
           <div className="flex justify-center pt-16">
             <motion.button
               type="button"
-              onClick={loadMore}
-              disabled={loadingMore}
+              onClick={type === 'premieres' ? loadMorePremieres : loadMore}
+              disabled={type === 'premieres' ? loadingMorePremieres : loadingMore}
               className="editorial-button"
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
               data-clickable
             >
-              <span className="text-[0.72rem]">{loadingMore ? 'Загрузка...' : 'Загрузить еще'}</span>
+              <span className="text-[0.72rem]">
+                {(type === 'premieres' ? loadingMorePremieres : loadingMore)
+                  ? 'Загрузка...'
+                  : type === 'premieres'
+                    ? 'Загрузить следующий месяц'
+                    : 'Загрузить еще'}
+              </span>
             </motion.button>
           </div>
         ) : null}

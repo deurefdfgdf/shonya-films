@@ -20,6 +20,7 @@ export default function MagneticCursor() {
     }
 
     setIsVisible(true);
+    document.body.classList.add('cursor-ready');
 
     const moveCursor = (event: MouseEvent) => {
       cursorX.set(event.clientX);
@@ -43,6 +44,7 @@ export default function MagneticCursor() {
     window.addEventListener('mouseup', handleMouseUp);
 
     return () => {
+      document.body.classList.remove('cursor-ready');
       window.removeEventListener('mousemove', moveCursor);
       window.removeEventListener('mouseover', handleMouseOver);
       window.removeEventListener('mousedown', handleMouseDown);

@@ -14,6 +14,7 @@ import FilmModal from '@/components/FilmModal';
 import Footer from '@/components/Footer';
 import Preloader from '@/components/Preloader';
 import MagneticCursor from '@/components/MagneticCursor';
+import AiAssistant from '@/components/AiAssistant';
 import { KinoAPI, type Film, filterFilms } from '@/lib/api';
 
 export default function Home() {
@@ -123,6 +124,8 @@ export default function Home() {
                 />
               </div>
             </>
+          ) : section === 'ai' ? (
+            <AiAssistant onFilmClick={openModal} />
           ) : (
             <CatalogSection type={section} onFilmClick={openModal} />
           )}

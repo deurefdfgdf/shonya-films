@@ -10,7 +10,22 @@ interface BentoGridProps {
 
 export default function BentoGrid({ films, onFilmClick }: BentoGridProps) {
   if (films.length === 0) {
-    return null;
+    return (
+      <section className="section-shell py-24 sm:py-32">
+        <div className="mb-12">
+          <div className="skeleton-shimmer mb-4 h-4 w-32 rounded-full" />
+          <div className="skeleton-shimmer h-20 w-[6ch] rounded-[1rem] sm:h-28" />
+        </div>
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,1.08fr)_minmax(340px,0.92fr)]">
+          <div className="skeleton-shimmer min-h-[28rem] rounded-[2rem]" />
+          <div className="space-y-3">
+            {Array.from({ length: 5 }, (_, i) => (
+              <div key={i} className="skeleton-shimmer h-24 rounded-[1.6rem]" />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
   }
 
   const [featured, ...secondary] = films.slice(0, 6);
