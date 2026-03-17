@@ -1,7 +1,7 @@
 import { KinoAPI, type Film, getFilmId } from './api';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const OPENROUTER_KEY = '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';
+const OPENROUTER_KEY = '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';
 const MODEL = 'openrouter/hunter-alpha';
 
 const SYSTEM_PROMPT = `Ты — эксперт по кино и сериалам. Отвечай ТОЛЬКО валидным JSON без markdown-блоков, без \`\`\`.
