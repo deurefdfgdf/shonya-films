@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +13,7 @@ import {
   getFilmId,
 } from '@/lib/api';
 import FilmCard from './FilmCard';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface FilmModalProps {
   filmId: number | null;
@@ -32,13 +33,11 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
   const [similar, setSimilar] = useState<Film[]>([]);
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { user, isWatched, toggleWatched } = useAuth();
+  const watched = filmId ? isWatched(filmId) : false;
 
   useEffect(() => {
-    if (!filmId) {
-      setFilm(null);
-      return;
-    }
-
+    if (!filmId) { setFilm(null); return; }
     setLoading(true);
     setFilm(null);
     setSimilar([]);
@@ -61,18 +60,11 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
   useEffect(() => {
     document.body.style.overflow = filmId ? 'hidden' : '';
     scrollRef.current?.scrollTo(0, 0);
-    return () => {
-      document.body.style.overflow = '';
-    };
+    return () => { document.body.style.overflow = ''; };
   }, [filmId]);
 
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-
+    const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [onClose]);
@@ -82,11 +74,11 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
   const originalTitle = film ? film.nameOriginal || film.nameEn || '' : '';
   const rating = film ? formatRating(film.ratingKinopoisk || film.rating) : null;
   const ratingClass = rating ? getRatingClass(rating) : null;
-  const genres = film?.genres?.map((genre) => genre.genre) || [];
-  const countries = film?.countries?.map((country) => country.country).join(', ') || '';
+  const genres = film?.genres?.map((g) => g.genre) || [];
+  const countries = film?.countries?.map((c) => c.country).join(', ') || '';
   const posterUrl = film?.posterUrl || film?.posterUrlPreview || '';
-  const directors = staff.filter((person) => person.professionKey === 'DIRECTOR').slice(0, 3);
-  const actors = staff.filter((person) => person.professionKey === 'ACTOR').slice(0, 8);
+  const directors = staff.filter((p) => p.professionKey === 'DIRECTOR').slice(0, 3);
+  const actors = staff.filter((p) => p.professionKey === 'ACTOR').slice(0, 8);
   const filmLength = film?.filmLength
     ? `${Math.floor(film.filmLength / 60)}ч ${film.filmLength % 60}мин`
     : '';
@@ -95,116 +87,112 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
     <AnimatePresence>
       {isOpen ? (
         <motion.div
-          className="fixed inset-0 z-[2000] flex items-center justify-center p-4 sm:p-6"
+          className="fixed inset-0 z-[2000] flex items-center justify-center p-3 sm:p-5"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.28 }}
+          transition={{ duration: 0.25 }}
         >
           <motion.button
             type="button"
-            className="absolute inset-0 bg-[rgb(0_0_0_/_0.72)] backdrop-blur-md"
+            className="absolute inset-0 bg-[rgb(0_0_0_/_0.75)] backdrop-blur-sm"
             onClick={onClose}
             aria-label="Закрыть окно"
           />
 
           <motion.div
-            className="relative z-10 w-full max-w-[1180px] overflow-hidden rounded-[2rem] border border-[var(--color-border)] bg-[rgb(9_9_9_/_0.96)] shadow-[var(--shadow-strong)]"
-            initial={{ opacity: 0, y: 30, scale: 0.98 }}
+            className="relative z-10 w-full max-w-[1120px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[rgb(10_10_10_/_0.97)] shadow-[var(--shadow-strong)]"
+            initial={{ opacity: 0, y: 24, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.98 }}
-            transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+            exit={{ opacity: 0, y: 16, scale: 0.98 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           >
+            {/* Close button */}
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgb(0_0_0_/_0.38)] text-lg text-[var(--color-text)] transition-colors duration-300 hover:bg-[rgb(255_244_227_/_0.08)]"
+              className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgb(10_10_10_/_0.6)] text-[var(--color-text-secondary)] transition-colors duration-200 hover:bg-[var(--color-panel-strong)] hover:text-[var(--color-text)]"
               aria-label="Закрыть"
               data-clickable
             >
-              ×
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
             </button>
 
             {loading ? (
-              <div className="flex min-h-[24rem] items-center justify-center">
-                <div className="flex flex-col items-center gap-4 text-[var(--color-text-muted)]">
-                  <div className="h-10 w-10 animate-spin rounded-full border border-[var(--color-border)] border-t-[var(--color-accent)]" />
-                  <span className="text-[0.72rem] uppercase tracking-[0.26em]">Загрузка</span>
+              <div className="flex min-h-[22rem] items-center justify-center">
+                <div className="flex flex-col items-center gap-3 text-[var(--color-text-muted)]">
+                  <div className="h-8 w-8 animate-spin rounded-full border border-[var(--color-border)] border-t-[var(--color-accent)]" />
+                  <span className="text-[0.6rem] uppercase tracking-[0.24em]">Загрузка</span>
                 </div>
               </div>
             ) : film ? (
-              <div className="grid max-h-[calc(100svh-2rem)] overflow-hidden lg:grid-cols-[minmax(280px,0.72fr)_minmax(0,1.28fr)]">
-                <div className="relative max-h-[14rem] overflow-hidden border-b border-[rgb(255_244_227_/_0.08)] lg:max-h-none lg:border-b-0 lg:border-r">
+              <div className="grid max-h-[calc(100svh-2rem)] overflow-hidden lg:grid-cols-[minmax(260px,0.68fr)_minmax(0,1.32fr)]">
+                {/* Poster side */}
+                <div className="relative max-h-[13rem] overflow-hidden border-b border-[var(--color-border)] lg:max-h-none lg:border-b-0 lg:border-r">
                   {posterUrl ? (
-                    <img
-                      src={posterUrl}
-                      alt={title}
-                      className="h-full w-full object-cover"
-                    />
+                    <img src={posterUrl} alt={title} className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full min-h-[20rem] items-center justify-center text-sm uppercase tracking-[0.28em] text-[var(--color-text-muted)]">
-                      Постер недоступен
+                    <div className="flex h-full min-h-[18rem] items-center justify-center text-[0.6rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                      Нет постера
                     </div>
                   )}
-
                   <div
                     className="absolute inset-0"
                     style={{
-                      background:
-                        'linear-gradient(180deg, rgb(5 5 5 / 0.08) 0%, rgb(5 5 5 / 0.26) 34%, rgb(5 5 5 / 0.8) 100%)',
+                      background: 'linear-gradient(180deg, transparent 30%, rgb(10 10 10 / 0.7) 100%)',
                     }}
                   />
-
-                  <div className="absolute bottom-0 left-0 right-0 p-6 text-[var(--color-text)]">
-                    <div className="text-[0.66rem] uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
-                      Poster frame
-                    </div>
-                    <div className="mt-3 text-[0.72rem] uppercase tracking-[0.22em] text-[var(--color-text-secondary)]">
-                      {[film.year, countries].filter(Boolean).join(' / ') || 'Карточка фильма'}
+                  <div className="absolute bottom-0 left-0 right-0 p-5">
+                    <div className="text-[0.58rem] uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
+                      {[film.year, countries].filter(Boolean).join(' — ')}
                     </div>
                   </div>
                 </div>
 
-                <div ref={scrollRef} className="overflow-y-auto overscroll-contain px-6 py-6 sm:px-8 sm:py-8">
-                  <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_260px]">
+                {/* Content side */}
+                <div ref={scrollRef} className="overflow-y-auto overscroll-contain px-5 py-5 sm:px-7 sm:py-6">
+                  <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_240px]">
                     <div>
-                      <span className="eyebrow mb-4">Фильм</span>
-                      <h2 className="display-title text-[clamp(2.8rem,5vw,5rem)] text-[var(--color-text)]">
+                      <h2 className="display-title text-[clamp(2.4rem,4.5vw,4.2rem)] text-[var(--color-text)]">
                         {title}
                       </h2>
                       {originalTitle && originalTitle !== title ? (
-                        <p className="mt-3 text-sm uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
+                        <p className="mt-2 text-[0.65rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
                           {originalTitle}
                         </p>
                       ) : null}
 
-                      <div className="mt-6 flex flex-wrap gap-3">
+                      {/* Rating badges */}
+                      <div className="mt-5 flex flex-wrap gap-2">
                         {rating && ratingClass ? (
-                          <div
-                            className="rounded-full border border-[var(--color-border)] px-4 py-2 text-[0.78rem] uppercase tracking-[0.22em]"
+                          <span
+                            className="rounded-full border border-[var(--color-border)] px-3 py-1.5 text-[0.65rem] uppercase tracking-[0.18em]"
                             style={{ color: ratingColors[ratingClass] }}
                           >
-                            Кинопоиск {rating}
-                          </div>
+                            KP {rating}
+                          </span>
                         ) : null}
                         {film.ratingImdb ? (
-                          <div className="rounded-full border border-[var(--color-border)] px-4 py-2 text-[0.78rem] uppercase tracking-[0.22em] text-[var(--color-text-secondary)]">
+                          <span className="rounded-full border border-[var(--color-border)] px-3 py-1.5 text-[0.65rem] uppercase tracking-[0.18em] text-[var(--color-text-secondary)]">
                             IMDb {film.ratingImdb}
-                          </div>
+                          </span>
                         ) : null}
                         {film.ratingKinopoiskVoteCount ? (
-                          <div className="rounded-full border border-[var(--color-border)] px-4 py-2 text-[0.78rem] uppercase tracking-[0.22em] text-[var(--color-text-secondary)]">
+                          <span className="rounded-full border border-[var(--color-border)] px-3 py-1.5 text-[0.65rem] uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
                             {formatNumber(film.ratingKinopoiskVoteCount)} оценок
-                          </div>
+                          </span>
                         ) : null}
                       </div>
 
+                      {/* Genres */}
                       {genres.length > 0 ? (
-                        <div className="mt-6 flex flex-wrap gap-2">
+                        <div className="mt-4 flex flex-wrap gap-1.5">
                           {genres.map((genre) => (
                             <span
                               key={genre}
-                              className="rounded-full border border-[var(--color-border)] px-3 py-1 text-[0.7rem] uppercase tracking-[0.2em] text-[var(--color-text-secondary)]"
+                              className="rounded-full border border-[var(--color-border)] px-2.5 py-1 text-[0.6rem] uppercase tracking-[0.16em] text-[var(--color-text-secondary)]"
                             >
                               {genre}
                             </span>
@@ -212,84 +200,86 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                         </div>
                       ) : null}
 
-                      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                      {/* Info grid */}
+                      <div className="mt-6 grid gap-3 sm:grid-cols-2">
                         {film.year ? <InfoItem label="Год" value={`${film.year}${film.endYear ? ` — ${film.endYear}` : ''}`} /> : null}
                         {countries ? <InfoItem label="Страна" value={countries} /> : null}
                         {filmLength ? <InfoItem label="Длительность" value={filmLength} /> : null}
                         {film.ratingAgeLimits ? <InfoItem label="Возраст" value={`${film.ratingAgeLimits.replace('age', '')}+`} /> : null}
                         {directors.length > 0 ? (
-                          <InfoItem
-                            label="Режиссер"
-                            value={directors.map((person) => person.nameRu || person.nameEn).join(', ')}
-                          />
+                          <InfoItem label="Режиссер" value={directors.map((p) => p.nameRu || p.nameEn).join(', ')} />
                         ) : null}
                         {film.slogan ? <InfoItem label="Слоган" value={film.slogan} italic /> : null}
                       </div>
 
+                      {/* Description */}
                       {film.description ? (
-                        <section className="mt-8 border-t border-[rgb(255_244_227_/_0.08)] pt-6">
-                          <h3 className="text-[0.72rem] uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
-                            Описание
-                          </h3>
-                          <p className="mt-4 max-w-[42rem] text-base leading-relaxed text-[var(--color-text-secondary)]">
+                        <section className="mt-6 border-t border-[var(--color-border)] pt-5">
+                          <h3 className="text-[0.6rem] uppercase tracking-[0.22em] text-[var(--color-text-muted)]">Описание</h3>
+                          <p className="mt-3 max-w-[40rem] text-[0.88rem] leading-relaxed text-[var(--color-text-secondary)]">
                             {film.description}
                           </p>
                         </section>
                       ) : null}
 
+                      {/* Actors */}
                       {actors.length > 0 ? (
-                        <section className="mt-8 border-t border-[rgb(255_244_227_/_0.08)] pt-6">
-                          <h3 className="text-[0.72rem] uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
-                            В ролях
-                          </h3>
-                          <p className="mt-4 text-base leading-relaxed text-[var(--color-text-secondary)]">
-                            {actors.map((person) => person.nameRu || person.nameEn).join(', ')}
+                        <section className="mt-6 border-t border-[var(--color-border)] pt-5">
+                          <h3 className="text-[0.6rem] uppercase tracking-[0.22em] text-[var(--color-text-muted)]">В ролях</h3>
+                          <p className="mt-3 text-[0.88rem] leading-relaxed text-[var(--color-text-secondary)]">
+                            {actors.map((p) => p.nameRu || p.nameEn).join(', ')}
                           </p>
                         </section>
                       ) : null}
                     </div>
 
-                    <aside className="h-fit rounded-[1.6rem] border border-[var(--color-border)] bg-[rgb(255_244_227_/_0.03)] p-5">
-                      <div className="text-[0.72rem] uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
+                    {/* Watch sidebar */}
+                    <aside className="h-fit rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-panel)] p-4">
+                      <div className="text-[0.6rem] uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
                         Где смотреть
                       </div>
-                      <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">
-                        Внешняя ссылка сохранена без изменений. Открывается в новой вкладке.
-                      </p>
-
                       <a
                         href={`https://www.sspoisk.ru/film/${filmId}/`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="editorial-button editorial-button--solid mt-5 flex w-full items-center justify-between"
+                        className="editorial-button editorial-button--solid mt-4 flex w-full items-center justify-between"
                         data-clickable
                       >
-                        <span className="text-[0.72rem] uppercase tracking-[0.22em]">
-                          Смотреть в Шонька плеере
-                        </span>
-                        <span className="text-lg">↗</span>
+                        <span className="text-[0.65rem] uppercase tracking-[0.18em]">Смотреть</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+                          <path d="M7 17L17 7M17 7H7M17 7v10" />
+                        </svg>
                       </a>
-
-                      {film.slogan ? (
-                        <blockquote className="mt-6 border-t border-[rgb(255_244_227_/_0.08)] pt-5 text-base italic leading-relaxed text-[var(--color-text-secondary)]">
-                          {film.slogan}
-                        </blockquote>
+                      {user ? (
+                        <button
+                          type="button"
+                          onClick={() => filmId && toggleWatched(filmId, title)}
+                          className={`mt-3 flex w-full items-center justify-between rounded-[var(--radius-full)] border px-4 py-2.5 text-[0.6rem] uppercase tracking-[0.18em] transition-all duration-300 ${
+                            watched
+                              ? 'border-[var(--color-success)] bg-[rgb(141_184_154_/_0.1)] text-[var(--color-success)]'
+                              : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]'
+                          }`}
+                          data-clickable
+                        >
+                          <span>{watched ? 'Просмотрен' : 'Просмотрено?'}</span>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+                            {watched
+                              ? <path d="M5 12l5 5L20 7" strokeLinecap="round" strokeLinejoin="round" />
+                              : <circle cx="12" cy="12" r="9" />
+                            }
+                          </svg>
+                        </button>
                       ) : null}
                     </aside>
                   </div>
 
+                  {/* Similar films */}
                   {similar.length > 0 ? (
-                    <section className="mt-10 border-t border-[rgb(255_244_227_/_0.08)] pt-8">
-                      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                        <div>
-                          <span className="eyebrow mb-3">Дальше смотреть</span>
-                          <h3 className="display-title text-[clamp(2rem,4vw,3rem)] text-[var(--color-text)]">
-                            Похожие фильмы
-                          </h3>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4 overflow-x-auto scroll-hide pb-2">
+                    <section className="mt-8 border-t border-[var(--color-border)] pt-6">
+                      <h3 className="mb-4 text-[0.6rem] uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
+                        Похожие фильмы
+                      </h3>
+                      <div className="flex gap-3 overflow-x-auto scroll-hide pb-2">
                         {similar.slice(0, 8).map((item, index) => (
                           <FilmCard
                             key={getFilmId(item) || index}
@@ -303,7 +293,8 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                     </section>
                   ) : null}
 
-                  <div className="sticky bottom-0 -mx-6 mt-6 border-t border-[rgb(255_244_227_/_0.1)] bg-[rgb(9_9_9_/_0.95)] px-6 py-4 backdrop-blur-md xl:hidden">
+                  {/* Mobile sticky CTA */}
+                  <div className="sticky bottom-0 -mx-5 mt-5 border-t border-[var(--color-border)] bg-[rgb(10_10_10_/_0.96)] px-5 py-3 backdrop-blur-sm xl:hidden">
                     <a
                       href={`https://www.sspoisk.ru/film/${filmId}/`}
                       target="_blank"
@@ -311,16 +302,16 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                       className="editorial-button editorial-button--solid flex w-full items-center justify-between"
                       data-clickable
                     >
-                      <span className="text-[0.72rem] uppercase tracking-[0.22em]">
-                        Смотреть
-                      </span>
-                      <span className="text-lg">↗</span>
+                      <span className="text-[0.65rem] uppercase tracking-[0.18em]">Смотреть</span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+                        <path d="M7 17L17 7M17 7H7M17 7v10" />
+                      </svg>
                     </a>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="px-6 py-20 text-center text-sm text-[var(--color-text-muted)]">
+              <div className="px-5 py-16 text-center text-[0.7rem] text-[var(--color-text-muted)]">
                 Ошибка загрузки
               </div>
             )}
@@ -331,22 +322,12 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
   );
 }
 
-function InfoItem({
-  label,
-  value,
-  italic,
-}: {
-  label: string;
-  value: string;
-  italic?: boolean;
-}) {
+function InfoItem({ label, value, italic }: { label: string; value: string; italic?: boolean }) {
   return (
-    <div className="rounded-[1.2rem] border border-[var(--color-border)] bg-[rgb(255_244_227_/_0.02)] p-4">
-      <div className="text-[0.68rem] uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
-        {label}
-      </div>
+    <div className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-panel)] p-3">
+      <div className="text-[0.55rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">{label}</div>
       <div
-        className="mt-2 text-sm leading-relaxed text-[var(--color-text)]"
+        className="mt-1.5 text-[0.82rem] leading-relaxed text-[var(--color-text)]"
         style={{ fontStyle: italic ? 'italic' : 'normal' }}
       >
         {value}

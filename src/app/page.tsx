@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import BackgroundOrbs from '@/components/BackgroundOrbs';
 import Header from '@/components/Header';
 import Hero from '@/components/Hero';
-import ScrollIndicator from '@/components/ScrollIndicator';
+
 import BentoGrid from '@/components/BentoGrid';
 import MarqueeStrip from '@/components/MarqueeStrip';
 import FilmRow from '@/components/FilmRow';
@@ -14,7 +14,7 @@ import FilmModal from '@/components/FilmModal';
 import Footer from '@/components/Footer';
 import Preloader from '@/components/Preloader';
 import MagneticCursor from '@/components/MagneticCursor';
-// import AiAssistant from '@/components/AiAssistant'; // TODO: раскомментировать когда будет рабочий OpenRouter ключ
+import AiAssistant from '@/components/AiAssistant';
 import { KinoAPI, type Film, filterFilms } from '@/lib/api';
 
 export default function Home() {
@@ -98,7 +98,6 @@ export default function Home() {
                 ready={preloaderDone}
               />
 
-              <ScrollIndicator />
 
               <div className="relative pb-20">
                 <BentoGrid films={popularFilms} onFilmClick={openModal} />
@@ -124,9 +123,9 @@ export default function Home() {
                 />
               </div>
             </>
-          ) : /* section === 'ai' ? (
+          ) : section === 'ai' ? (
             <AiAssistant onFilmClick={openModal} />
-          ) : */ (
+          ) : (
             <CatalogSection type={section} onFilmClick={openModal} />
           )}
 

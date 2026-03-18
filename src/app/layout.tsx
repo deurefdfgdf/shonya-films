@@ -1,24 +1,26 @@
-﻿import type { Metadata } from 'next';
-import { Cormorant_Garamond, Inter, Oswald } from 'next/font/google';
+﻿import type { Metadata, Viewport } from 'next';
+import { Inter, Space_Grotesk } from 'next/font/google';
+import Providers from '@/components/Providers';
 import './globals.css';
 
 const inter = Inter({
   variable: '--font-inter',
   subsets: ['latin', 'cyrillic'],
-  weight: ['300', '400', '500', '600', '700', '800'],
+  weight: ['300', '400', '500', '600', '700'],
 });
 
-const cormorant = Cormorant_Garamond({
-  variable: '--font-cormorant',
-  subsets: ['latin', 'cyrillic'],
-  weight: ['400', '500', '600', '700'],
+const spaceGrotesk = Space_Grotesk({
+  variable: '--font-space-grotesk',
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
 });
 
-const oswald = Oswald({
-  variable: '--font-oswald',
-  subsets: ['latin', 'cyrillic'],
-  weight: ['300', '400', '500', '600'],
-});
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#0a0a0a',
+};
 
 export const metadata: Metadata = {
   title: 'Шоня Фильмсы — фильмы, сериалы, рейтинги',
@@ -36,9 +38,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru" className="dark">
-      <body className={`${inter.variable} ${cormorant.variable} ${oswald.variable} antialiased`}>
+      <body className={`${inter.variable} ${spaceGrotesk.variable} antialiased`}>
         <div className="noise-overlay" />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

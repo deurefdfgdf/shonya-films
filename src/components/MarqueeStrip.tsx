@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { motion } from 'framer-motion';
 import { type Film, getFilmTitle, formatRating } from '@/lib/api';
@@ -8,31 +8,29 @@ interface MarqueeStripProps {
 }
 
 export default function MarqueeStrip({ films }: MarqueeStripProps) {
-  if (films.length === 0) {
-    return null;
-  }
+  if (films.length === 0) return null;
 
   const items = [...films, ...films, ...films];
 
   return (
-    <section className="overflow-hidden border-y border-[rgb(255_244_227_/_0.08)] py-5">
+    <section className="overflow-hidden border-y border-[var(--color-border)] py-4">
       <motion.div
-        className="flex w-max items-center gap-8 whitespace-nowrap"
+        className="flex w-max items-center gap-6 whitespace-nowrap"
         animate={{ x: ['0%', '-33.33%'] }}
-        transition={{ duration: 34, ease: 'linear', repeat: Infinity }}
+        transition={{ duration: 40, ease: 'linear', repeat: Infinity }}
       >
         {items.map((film, index) => (
           <span
             key={`${film.kinopoiskId || film.filmId}-${index}`}
-            className="inline-flex items-center gap-3 text-[clamp(1.1rem,2vw,1.7rem)] text-[var(--color-text-secondary)]"
+            className="inline-flex items-center gap-3"
           >
-            <span className="text-[0.68rem] uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
-              {formatRating(film.ratingKinopoisk || film.rating) || '00'}
-            </span>
-            <span className="display-title leading-none text-[var(--color-text)]">
+            <span className="display-title text-[clamp(1rem,1.8vw,1.5rem)] leading-none text-[var(--color-text)]">
               {getFilmTitle(film)}
             </span>
-            <span className="h-px w-8 bg-[var(--color-border)]" />
+            <span className="text-[0.6rem] tabular-nums tracking-[0.16em] text-[var(--color-accent)]">
+              {formatRating(film.ratingKinopoisk || film.rating) || '—'}
+            </span>
+            <span className="text-[var(--color-text-muted)]">—</span>
           </span>
         ))}
       </motion.div>

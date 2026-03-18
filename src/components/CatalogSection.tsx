@@ -373,7 +373,7 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
       {showFilters ? (
         <section className="section-shell mt-12">
           <motion.div
-            className="glass-panel relative overflow-hidden rounded-[2rem] px-5 py-6 sm:px-7 sm:py-7 lg:px-8 lg:py-8"
+            className="glass-panel relative overflow-visible rounded-[2rem] px-5 py-6 sm:px-7 sm:py-7 lg:px-8 lg:py-8"
             initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}

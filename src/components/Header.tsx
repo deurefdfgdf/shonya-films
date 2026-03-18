@@ -1,8 +1,9 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { KinoAPI, type Film, getFilmId, getFilmTitle, formatRating } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface HeaderProps {
   activeSection: string;
@@ -11,12 +12,11 @@ interface HeaderProps {
 }
 
 const NAV_ITEMS = [
-  { id: 'home', label: 'Главная' },
-  { id: 'popular', label: 'Популярное' },
-  { id: 'top250', label: 'Топ 250' },
-  { id: 'premieres', label: 'Премьеры' },
-  { id: 'series', label: 'Сериалы' },
-  // { id: 'ai', label: 'ИИ Подбор' }, // TODO: раскомментировать когда будет рабочий OpenRouter ключ
+  { id: 'home', label: 'Главная', num: '01' },
+  { id: 'popular', label: 'Популярное', num: '02' },
+  { id: 'top250', label: 'Топ 250', num: '03' },
+  { id: 'premieres', label: 'Премьеры', num: '04' },
+  { id: 'series', label: 'Сериалы', num: '05' },
 ];
 
 export default function Header({ activeSection, onNavigate, onFilmClick }: HeaderProps) {
@@ -26,8 +26,11 @@ export default function Header({ activeSection, onNavigate, onFilmClick }: Heade
   const [searchResults, setSearchResults] = useState<Film[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { user, signIn, signOut } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 24);
@@ -40,26 +43,33 @@ export default function Header({ activeSection, onNavigate, onFilmClick }: Heade
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setSearchOpen(false);
       }
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setProfileOpen(false);
+      }
     };
-
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
   useEffect(() => {
     return () => {
-      if (searchTimeout.current) {
-        clearTimeout(searchTimeout.current);
-      }
+      if (searchTimeout.current) clearTimeout(searchTimeout.current);
     };
   }, []);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileMenuOpen]);
+
   const handleSearch = useCallback((value: string) => {
     setSearchQuery(value);
-
-    if (searchTimeout.current) {
-      clearTimeout(searchTimeout.current);
-    }
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
 
     if (value.trim().length < 2) {
       setSearchResults([]);
@@ -74,7 +84,7 @@ export default function Header({ activeSection, onNavigate, onFilmClick }: Heade
     searchTimeout.current = setTimeout(async () => {
       try {
         const data = await KinoAPI.searchFilms(value.trim());
-        setSearchResults((data.films || data.items || []).slice(0, 8));
+        setSearchResults((data.films || data.items || []).slice(0, 6));
       } catch {
         setSearchResults([]);
       } finally {
@@ -91,230 +101,362 @@ export default function Header({ activeSection, onNavigate, onFilmClick }: Heade
   };
 
   return (
-    <header
-      className="fixed left-0 right-0 top-0 z-50"
-      style={{
-        height: 'var(--header-height)',
-        background: scrolled
-          ? 'rgb(8 8 8 / 0.84)'
-          : 'linear-gradient(180deg, rgb(8 8 8 / 0.72) 0%, rgb(8 8 8 / 0.22) 100%)',
-        backdropFilter: 'blur(18px)',
-        WebkitBackdropFilter: 'blur(18px)',
-        borderBottom: scrolled ? '1px solid rgb(255 244 227 / 0.08)' : '1px solid rgb(255 244 227 / 0.04)',
-      }}
-    >
-      <div className="section-shell flex h-full items-center gap-4 lg:gap-8">
-        <button
-          type="button"
-          onClick={() => onNavigate('home')}
-          className="shrink-0 text-left"
-          data-clickable
-        >
-          <span className="block text-[0.58rem] uppercase tracking-[0.34em] text-[var(--color-text-muted)]">
-            Film archive
-          </span>
-          <span className="mt-1 block text-[1.06rem] uppercase tracking-[0.18em] text-[var(--color-text-secondary)] sm:text-[1.15rem]">
-            Шоня Фильмсы
-          </span>
-        </button>
+    <>
+      <header
+        className="fixed left-0 right-0 top-0 z-50 transition-all duration-500"
+        style={{
+          height: 'var(--header-height)',
+          background: scrolled
+            ? 'rgb(10 10 10 / 0.92)'
+            : 'linear-gradient(180deg, rgb(10 10 10 / 0.8) 0%, transparent 100%)',
+          backdropFilter: scrolled ? 'blur(20px)' : 'none',
+          WebkitBackdropFilter: scrolled ? 'blur(20px)' : 'none',
+          borderBottom: scrolled ? '1px solid rgb(220 218 216 / 0.07)' : '1px solid transparent',
+        }}
+      >
+        <div className="section-shell flex h-full items-center gap-6 lg:gap-10">
+          {/* Logo */}
+          <button
+            type="button"
+            onClick={() => onNavigate('home')}
+            className="shrink-0"
+            data-clickable
+          >
+            <span className="display-title block text-[1.1rem] tracking-[0.12em] text-[var(--color-text)] sm:text-[1.2rem]">
+              ШОНЯ ФИЛЬМСЫ
+            </span>
+          </button>
 
-        <nav className="hidden flex-1 items-center justify-center gap-1 md:flex">
-          {NAV_ITEMS.map((item) => {
-            const isActive = activeSection === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  onNavigate(item.id);
-                  setMobileMenuOpen(false);
-                }}
-                className={`relative px-4 py-3 text-[0.6rem] uppercase tracking-[0.32em] transition-colors duration-500${
-                  item.id === 'ai' ? ' rounded-full border border-[rgb(201_184_154_/_0.2)] ml-2' : ''
-                }`}
+          {/* Desktop nav */}
+          <nav className="hidden flex-1 items-center justify-center gap-0.5 md:flex">
+            {NAV_ITEMS.map((item) => {
+              const isActive = activeSection === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onNavigate(item.id)}
+                  className="group relative px-4 py-3 text-[0.65rem] uppercase tracking-[0.24em] transition-colors duration-300"
+                  style={{
+                    color: isActive ? 'var(--color-text)' : 'var(--color-text-secondary)',
+                  }}
+                  data-clickable
+                >
+                  <span className="relative z-10">{item.label}</span>
+                  {/* Hover underline */}
+                  <span
+                    className="absolute inset-x-4 bottom-[0.7rem] h-px origin-left scale-x-0 bg-[var(--color-accent)] transition-transform duration-500 ease-[var(--ease-smooth)] group-hover:scale-x-100"
+                    style={{
+                      transform: isActive ? 'scaleX(1)' : undefined,
+                    }}
+                  />
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Right side */}
+          <div className="ml-auto flex items-center gap-3 sm:gap-4">
+            {/* AI button */}
+            <button
+              type="button"
+              onClick={() => {
+                onNavigate('ai');
+                setMobileMenuOpen(false);
+              }}
+              className="hidden items-center gap-1.5 rounded-full border px-3.5 py-2 text-[0.56rem] uppercase tracking-[0.22em] transition-all duration-300 hover:bg-[var(--color-accent-soft)] md:inline-flex"
+              style={{
+                borderColor: activeSection === 'ai' ? 'var(--color-accent)' : 'var(--color-border-strong)',
+                color: activeSection === 'ai' ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                background: activeSection === 'ai' ? 'var(--color-accent-soft)' : 'transparent',
+              }}
+              data-clickable
+            >
+              <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3" stroke="currentColor" strokeWidth="1.5">
+                <path d="M12 2l2.4 7.2H22l-6 4.8 2.4 7.2L12 16.4l-6.4 4.8 2.4-7.2-6-4.8h7.6z" />
+              </svg>
+              ИИ Подбор
+            </button>
+
+            {/* Search */}
+            <div ref={searchRef} className="relative w-[10rem] sm:w-[13rem] lg:w-[16rem]">
+              <label
+                className="flex items-center gap-2 border-b pb-2 text-[0.56rem] uppercase tracking-[0.24em] text-[var(--color-text-muted)] transition-colors duration-300 focus-within:border-[var(--color-accent)]"
                 style={{
-                  color: item.id === 'ai'
-                    ? (isActive ? 'var(--color-accent)' : 'rgb(201 184 154 / 0.7)')
-                    : (isActive ? 'var(--color-text-secondary)' : 'rgb(255 244 227 / 0.52)'),
+                  borderColor: searchOpen ? 'var(--color-accent)' : 'var(--color-border)',
                 }}
                 data-clickable
               >
-                <span className="relative z-10 inline-flex items-center gap-1.5">
-                  {item.id === 'ai' && (
-                    <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3" stroke="var(--color-accent)" strokeWidth="2">
-                      <path d="M12 2l2.4 7.2H22l-6 4.8 2.4 7.2L12 16.4l-6.4 4.8 2.4-7.2-6-4.8h7.6z" />
-                    </svg>
-                  )}
-                  {item.label}
-                </span>
-                {isActive ? (
-                  <motion.span
-                    layoutId="header-line"
-                    className="absolute inset-x-4 bottom-[0.78rem] h-px bg-[rgb(255_244_227_/_0.76)]"
-                    transition={{ type: 'spring', stiffness: 360, damping: 38 }}
-                  />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-3.5 w-3.5 shrink-0">
+                  <circle cx="11" cy="11" r="7.5" />
+                  <path d="m20 20-3.5-3.5" />
+                </svg>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  onFocus={() => searchQuery.trim().length >= 2 && setSearchOpen(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setSearchOpen(false);
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
+                  placeholder="Поиск"
+                  className="w-full bg-transparent text-[0.82rem] normal-case tracking-normal text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:outline-none"
+                  autoComplete="off"
+                  aria-label="Поиск фильма"
+                />
+              </label>
+
+              {/* Search dropdown */}
+              <AnimatePresence>
+                {searchOpen ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                    className="glass-panel absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[min(360px,90vw)] overflow-hidden rounded-[var(--radius-md)]"
+                  >
+                    {searching ? (
+                      <div className="px-4 py-5 text-[0.75rem] text-[var(--color-text-muted)]">Ищем...</div>
+                    ) : searchResults.length === 0 ? (
+                      <div className="px-4 py-5 text-[0.75rem] text-[var(--color-text-muted)]">Ничего не найдено</div>
+                    ) : (
+                      searchResults.map((film, index) => (
+                        <button
+                          key={getFilmId(film) || index}
+                          type="button"
+                          onClick={() => handleResultClick(film)}
+                          className="flex w-full items-center gap-3 border-b border-[var(--color-border)] px-4 py-3 text-left transition-colors duration-200 last:border-b-0 hover:bg-[var(--color-panel-strong)]"
+                          data-clickable
+                        >
+                          <div className="film-frame h-14 w-10 shrink-0 rounded-[var(--radius-sm)]">
+                            {film.posterUrlPreview || film.posterUrl ? (
+                              <img
+                                src={film.posterUrlPreview || film.posterUrl}
+                                alt={getFilmTitle(film)}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-[0.6rem] text-[var(--color-text-muted)]">
+                                —
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-[0.82rem] text-[var(--color-text)]">{getFilmTitle(film)}</div>
+                            <div className="mt-0.5 text-[0.6rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                              {[film.year, formatRating(film.ratingKinopoisk || film.rating)]
+                                .filter(Boolean)
+                                .join(' — ')}
+                            </div>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </motion.div>
                 ) : null}
-              </button>
-            );
-          })}
-        </nav>
+              </AnimatePresence>
+            </div>
 
-        <div className="ml-auto flex items-center gap-2.5 sm:gap-3.5">
-          <div ref={searchRef} className="relative w-[11.5rem] sm:w-[15rem] lg:w-[18.5rem]">
-            <label
-              className="flex items-center gap-2.5 border-b border-[rgb(255_244_227_/_0.12)] pb-2 text-[0.58rem] uppercase tracking-[0.28em] text-[var(--color-text-muted)] transition-colors duration-300 focus-within:border-[rgb(255_244_227_/_0.3)]"
-              data-clickable
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                className="h-3.5 w-3.5 shrink-0"
-              >
-                <circle cx="11" cy="11" r="7.5" />
-                <path d="m20 20-3.5-3.5" />
-              </svg>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(event) => handleSearch(event.target.value)}
-                onFocus={() => searchQuery.trim().length >= 2 && setSearchOpen(true)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape') {
-                    setSearchOpen(false);
-                    (event.target as HTMLInputElement).blur();
-                  }
-                }}
-                placeholder="Поиск"
-                className="w-full bg-transparent text-[0.86rem] normal-case tracking-normal text-[var(--color-text)] placeholder:text-[rgb(255_244_227_/_0.36)] focus:outline-none"
-                autoComplete="off"
-                aria-label="Поиск фильма"
-              />
-            </label>
-
-            <AnimatePresence>
-              {searchOpen ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-                  className="glass-panel absolute right-0 top-[calc(100%+1rem)] z-50 w-full overflow-hidden rounded-[1.5rem]"
+            {/* Auth */}
+            {user ? (
+              <div ref={profileRef} className="relative hidden md:block">
+                <button
+                  type="button"
+                  onClick={() => setProfileOpen((v) => !v)}
+                  className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-[var(--color-border)] transition-colors duration-300 hover:border-[var(--color-border-strong)]"
+                  data-clickable
                 >
-                  {searching ? (
-                    <div className="px-5 py-6 text-sm text-[var(--color-text-muted)]">Ищем фильм...</div>
-                  ) : searchResults.length === 0 ? (
-                    <div className="px-5 py-6 text-sm text-[var(--color-text-muted)]">Ничего не найдено</div>
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
-                    searchResults.map((film, index) => (
+                    <span className="text-[0.6rem] uppercase text-[var(--color-text-secondary)]">
+                      {user.displayName?.[0] || '?'}
+                    </span>
+                  )}
+                </button>
+                <AnimatePresence>
+                  {profileOpen ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 6 }}
+                      transition={{ duration: 0.2 }}
+                      className="glass-panel absolute right-0 top-[calc(100%+0.5rem)] z-50 w-48 rounded-[var(--radius-md)] p-3"
+                    >
+                      <div className="truncate text-[0.72rem] text-[var(--color-text-secondary)]">
+                        {user.displayName || user.email}
+                      </div>
                       <button
-                        key={getFilmId(film) || index}
                         type="button"
-                        onClick={() => handleResultClick(film)}
-                        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-300 hover:bg-[rgb(255_244_227_/_0.05)]"
-                        style={{
-                          borderBottom:
-                            index === searchResults.length - 1
-                              ? 'none'
-                              : '1px solid rgb(255 244 227 / 0.06)',
-                        }}
+                        onClick={() => { signOut(); setProfileOpen(false); }}
+                        className="mt-2.5 w-full text-left text-[0.6rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)] transition-colors duration-200 hover:text-[var(--color-text)]"
                         data-clickable
                       >
-                        <div className="film-frame h-16 w-11 shrink-0 rounded-[0.95rem]">
-                          {film.posterUrlPreview || film.posterUrl ? (
-                            <img
-                              src={film.posterUrlPreview || film.posterUrl}
-                              alt={getFilmTitle(film)}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-xs text-[var(--color-text-muted)]">
-                              Нет
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm text-[var(--color-text)]">{getFilmTitle(film)}</div>
-                          <div className="mt-1 text-[0.66rem] uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
-                            {[film.year, formatRating(film.ratingKinopoisk || film.rating)]
-                              .filter(Boolean)
-                              .join(' / ')}
-                          </div>
-                        </div>
+                        Выйти
                       </button>
-                    ))
-                  )}
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={signIn}
+                className="hidden items-center gap-1.5 rounded-full border border-[var(--color-border-strong)] px-3 py-1.5 text-[0.56rem] uppercase tracking-[0.2em] text-[var(--color-text-secondary)] transition-all duration-300 hover:bg-[var(--color-accent-soft)] hover:text-[var(--color-text)] md:inline-flex"
+                data-clickable
+              >
+                Войти
+              </button>
+            )}
+
+            {/* Mobile burger */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              className="flex h-10 w-10 flex-col items-center justify-center gap-[5px] md:hidden"
+              aria-label="Меню"
+              data-clickable
+            >
+              <motion.span
+                className="block h-px w-5 bg-[var(--color-text)]"
+                animate={mobileMenuOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
+                transition={{ duration: 0.3 }}
+              />
+              <motion.span
+                className="block h-px w-5 bg-[var(--color-text)]"
+                animate={mobileMenuOpen ? { opacity: 0 } : { opacity: 1 }}
+                transition={{ duration: 0.2 }}
+              />
+              <motion.span
+                className="block h-px w-5 bg-[var(--color-text)]"
+                animate={mobileMenuOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }}
+                transition={{ duration: 0.3 }}
+              />
+            </button>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen((open) => !open)}
-            className="flex h-10 w-10 flex-col items-center justify-center gap-[4px] md:hidden"
-            aria-label="Меню"
-            data-clickable
-          >
-            <motion.span
-              className="block h-px w-5 bg-[var(--color-text)]"
-              animate={mobileMenuOpen ? { rotate: 45, y: 5 } : { rotate: 0, y: 0 }}
-            />
-            <motion.span
-              className="block h-px w-5 bg-[var(--color-text)]"
-              animate={mobileMenuOpen ? { opacity: 0 } : { opacity: 1 }}
-            />
-            <motion.span
-              className="block h-px w-5 bg-[var(--color-text)]"
-              animate={mobileMenuOpen ? { rotate: -45, y: -5 } : { rotate: 0, y: 0 }}
-            />
-          </button>
         </div>
-      </div>
+      </header>
 
+      {/* Fullscreen mobile menu */}
       <AnimatePresence>
         {mobileMenuOpen ? (
-          <motion.nav
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="border-b border-[rgb(255_244_227_/_0.06)] bg-[rgb(8_8_8_/_0.94)] px-5 py-5 md:hidden"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed inset-0 z-40 flex flex-col justify-center bg-[#0a0a0a] px-8 md:hidden"
+            style={{ paddingTop: 'var(--header-height)' }}
           >
-            <div className="mx-auto flex max-w-[var(--container-width)] flex-col gap-1.5">
+            <nav className="flex flex-col gap-2">
               {NAV_ITEMS.map((item, index) => {
                 const isActive = activeSection === item.id;
-
                 return (
-                  <button
+                  <motion.button
                     key={item.id}
                     type="button"
+                    initial={{ opacity: 0, x: -30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.06, ease: [0.22, 1, 0.36, 1] }}
                     onClick={() => {
                       onNavigate(item.id);
                       setMobileMenuOpen(false);
                     }}
-                    className="flex items-center justify-between rounded-[1.1rem] border px-4 py-4 text-left text-[0.66rem] uppercase tracking-[0.28em] transition-colors duration-300"
-                    style={{
-                      color: isActive ? 'var(--color-text)' : 'var(--color-text-secondary)',
-                      background: isActive ? 'rgb(255 244 227 / 0.05)' : 'transparent',
-                      borderColor: isActive ? 'rgb(255 244 227 / 0.08)' : 'rgb(255 244 227 / 0.04)',
-                    }}
+                    className="flex items-baseline gap-4 py-3 text-left"
                     data-clickable
                   >
-                    <span>{item.label}</span>
-                    <span className="text-[var(--color-text-muted)]">
-                      {String(index + 1).padStart(2, '0')}
+                    <span className="text-[0.6rem] tabular-nums tracking-[0.2em] text-[var(--color-text-muted)]">
+                      {item.num}
                     </span>
-                  </button>
+                    <span
+                      className="display-title text-[clamp(2rem,8vw,3.5rem)]"
+                      style={{
+                        color: isActive ? 'var(--color-text)' : 'var(--color-text-secondary)',
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                  </motion.button>
                 );
               })}
-            </div>
-          </motion.nav>
+
+              <motion.button
+                type="button"
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: NAV_ITEMS.length * 0.06, ease: [0.22, 1, 0.36, 1] }}
+                onClick={() => {
+                  onNavigate('ai');
+                  setMobileMenuOpen(false);
+                }}
+                className="mt-4 flex items-center gap-3 py-3 text-left"
+                data-clickable
+              >
+                <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="var(--color-accent)" strokeWidth="1.5">
+                  <path d="M12 2l2.4 7.2H22l-6 4.8 2.4 7.2L12 16.4l-6.4 4.8 2.4-7.2-6-4.8h7.6z" />
+                </svg>
+                <span
+                  className="display-title text-[clamp(1.8rem,6vw,2.5rem)]"
+                  style={{ color: 'var(--color-accent)' }}
+                >
+                  ИИ Подбор
+                </span>
+              </motion.button>
+            </nav>
+
+            {/* Mobile auth */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+              className="mt-8"
+            >
+              {user ? (
+                <div className="flex items-center gap-3">
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="" className="h-9 w-9 rounded-full border border-[var(--color-border)]" referrerPolicy="no-referrer" />
+                  ) : null}
+                  <div>
+                    <div className="text-[0.8rem] text-[var(--color-text-secondary)]">{user.displayName}</div>
+                    <button
+                      type="button"
+                      onClick={() => { signOut(); setMobileMenuOpen(false); }}
+                      className="text-[0.58rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+                      data-clickable
+                    >
+                      Выйти
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { signIn(); setMobileMenuOpen(false); }}
+                  className="rounded-full border border-[var(--color-border-strong)] px-5 py-2.5 text-[0.62rem] uppercase tracking-[0.2em] text-[var(--color-text-secondary)]"
+                  data-clickable
+                >
+                  Войти через Google
+                </button>
+              )}
+            </motion.div>
+
+            {/* Bottom annotation */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+              className="absolute bottom-10 left-8 right-8 flex items-center justify-between text-[0.55rem] uppercase tracking-[0.3em] text-[var(--color-text-muted)]"
+            >
+              <span>Film archive</span>
+              <span>2026</span>
+            </motion.div>
+          </motion.div>
         ) : null}
       </AnimatePresence>
-    </header>
+    </>
   );
 }
-

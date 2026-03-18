@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch origin)",
+      "Bash(npx next build)",
+      "WebFetch(domain:fontofweb.com)"
+    ]
+  }
+}

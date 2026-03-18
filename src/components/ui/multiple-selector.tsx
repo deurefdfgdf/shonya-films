@@ -493,7 +493,7 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
         <div className="relative">
           {open ? (
             <CommandList
-              className="glass-panel absolute top-3 z-30 w-full overflow-hidden rounded-[1.45rem] border border-[rgb(255_244_227_/_0.1)] p-2 text-[var(--color-text)] shadow-[var(--shadow-soft)] outline-none"
+              className="glass-panel absolute top-3 z-30 w-full !max-h-[min(28rem,60vh)] overflow-y-auto rounded-[1.45rem] border border-[rgb(255_244_227_/_0.1)] p-2 text-[var(--color-text)] shadow-[var(--shadow-soft)] outline-none"
               onMouseLeave={() => setOnScrollbar(false)}
               onMouseEnter={() => setOnScrollbar(true)}
               onMouseUp={() => inputRef.current?.focus()}
@@ -509,7 +509,7 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
                     <CommandGroup
                       key={key}
                       heading={key}
-                      className="h-full max-h-[min(24rem,52vh)] overflow-auto px-1 [&_[cmdk-group-heading]]:sticky [&_[cmdk-group-heading]]:top-0 [&_[cmdk-group-heading]]:z-10 [&_[cmdk-group-heading]]:rounded-full [&_[cmdk-group-heading]]:bg-[rgb(10_10_10_/_0.9)] [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:text-[0.62rem] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.22em] [&_[cmdk-group-heading]]:text-[var(--color-text-muted)]"
+                      className="h-full overflow-visible px-1 [&_[cmdk-group-heading]]:sticky [&_[cmdk-group-heading]]:top-0 [&_[cmdk-group-heading]]:z-10 [&_[cmdk-group-heading]]:rounded-full [&_[cmdk-group-heading]]:bg-[rgb(10_10_10_/_0.9)] [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:text-[0.62rem] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-[0.22em] [&_[cmdk-group-heading]]:text-[var(--color-text-muted)]"
                     >
                       {dropdowns.map((option) => (
                         <CommandItem

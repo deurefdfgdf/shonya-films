@@ -11,6 +11,7 @@ import {
 } from '@/lib/ai';
 import FilmCard from './FilmCard';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AiAssistantProps {
   onFilmClick: (id: number) => void;
@@ -156,14 +157,14 @@ function AiLoadingView({ tags }: { tags?: string[] }) {
           <motion.div
             className="flex h-12 w-12 items-center justify-center rounded-full"
             style={{
-              background: 'rgb(201 184 154 / 0.15)',
-              boxShadow: '0 0 30px rgb(201 184 154 / 0.3)',
+              background: 'rgb(196 191 182 / 0.1)',
+              boxShadow: '0 0 30px rgb(196 191 182 / 0.15)',
             }}
             animate={{
               boxShadow: [
-                '0 0 20px rgb(201 184 154 / 0.2)',
-                '0 0 40px rgb(201 184 154 / 0.5)',
-                '0 0 20px rgb(201 184 154 / 0.2)',
+                '0 0 20px rgb(196 191 182 / 0.1)',
+                '0 0 40px rgb(196 191 182 / 0.25)',
+                '0 0 20px rgb(196 191 182 / 0.1)',
               ],
               scale: [1, 1.15, 1],
             }}
@@ -355,6 +356,7 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
   const [resultFilms, setResultFilms] = useState<Film[]>([]);
   const [resultReasons, setResultReasons] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const { watchedFilmTitles } = useAuth();
 
   const toggleMood = (id: string) => {
     setSelectedMoods((prev) =>
@@ -386,7 +388,7 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
       );
       localStorage.setItem(STORAGE_KEYS.lastTags, JSON.stringify(selectedMoods));
 
-      const response = await getQuickRecommendations(allTags);
+      const response = await getQuickRecommendations(allTags, watchedFilmTitles);
       const films = await resolveFilmNames(response.films);
       setResultFilms(films);
       setPhase('quick-results');
@@ -402,7 +404,7 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
     try {
       localStorage.setItem(STORAGE_KEYS.lastQuery, userQuery);
 
-      const response = await getProbeFilms(userQuery);
+      const response = await getProbeFilms(userQuery, watchedFilmTitles);
       setExtractedTags(response.tags || []);
       setProbeFilmNames(response.films);
       const films = await resolveFilmNames(response.films);
@@ -431,7 +433,7 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
         else skipped.push(title);
       });
 
-      const response = await getFinalRecommendations(userQuery, liked, disliked, skipped);
+      const response = await getFinalRecommendations(userQuery, liked, disliked, skipped, watchedFilmTitles);
       const filmNames = response.films.map((f) => f.name);
       const reasons: Record<string, string> = {};
       for (const f of response.films) {

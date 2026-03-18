@@ -3,7 +3,7 @@
  * https://kinopoiskapiunofficial.tech/documentation/api/
  */
 
-const API_KEY = '4075f2f6-6bea-477d-b54a-ec82f7737aaf';
+const API_KEY = process.env.NEXT_PUBLIC_KINOPOISK_API_KEY || '';
 const BASE_URL = 'https://kinopoiskapiunofficial.tech/api';
 
 const CACHE_DURATION = 30 * 60 * 1000;

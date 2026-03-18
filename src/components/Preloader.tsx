@@ -1,80 +1,99 @@
-﻿'use client';
+'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 interface PreloaderProps {
   onComplete: () => void;
 }
 
+const TITLE = 'ШОНЯ ФИЛЬМСЫ';
+
 export default function Preloader({ onComplete }: PreloaderProps) {
   const [exiting, setExiting] = useState(false);
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const duration = 2200;
+    const steps = 60;
+    const interval = duration / steps;
+    let step = 0;
+
+    const timer = setInterval(() => {
+      step++;
+      const progress = step / steps;
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.round(eased * 100));
+
+      if (step >= steps) {
+        clearInterval(timer);
+        setTimeout(() => setExiting(true), 200);
+      }
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <motion.div
-      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-[#050505]"
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden bg-[#0a0a0a]"
       animate={
         exiting
-          ? { opacity: 0, scale: 1.04, filter: 'blur(12px)' }
-          : { opacity: 1, scale: 1, filter: 'blur(0px)' }
+          ? { opacity: 0, y: -30 }
+          : { opacity: 1, y: 0 }
       }
-      transition={{ duration: 0.9, ease: [0.77, 0, 0.18, 1] }}
+      transition={{ duration: 0.8, ease: [0.77, 0, 0.18, 1] }}
       onAnimationComplete={() => {
-        if (exiting) {
-          onComplete();
-        }
+        if (exiting) onComplete();
       }}
     >
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(circle at 50% 38%, rgb(201 184 154 / 0.16) 0%, transparent 30%), linear-gradient(180deg, rgb(255 255 255 / 0.03) 0%, transparent 18%, transparent 100%)',
-        }}
-      />
+      {/* Counter — top right */}
+      <motion.span
+        className="absolute right-8 top-8 font-[var(--font-display)] text-[0.7rem] tabular-nums tracking-[0.2em] text-[var(--color-text-muted)]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        {String(count).padStart(3, '0')}
+      </motion.span>
 
-      <div className="relative flex flex-col items-center gap-6 px-6 text-center">
-        <motion.span
-          className="eyebrow"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          Cinema index 2026
-        </motion.span>
-
-        <div className="overflow-hidden">
-          <motion.h1
-            className="display-title text-[clamp(4rem,10vw,8rem)] leading-[0.86] text-[var(--color-text)]"
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
+      {/* Title — staggered character reveal */}
+      <div className="flex flex-wrap justify-center gap-x-[0.06em] overflow-hidden px-6">
+        {TITLE.split('').map((char, i) => (
+          <motion.span
+            key={i}
+            className="display-title text-[clamp(3.5rem,12vw,9rem)] text-[var(--color-text)]"
+            initial={{ y: '120%', opacity: 0 }}
+            animate={{ y: '0%', opacity: 1 }}
+            transition={{
+              duration: 0.7,
+              ease: [0.22, 1, 0.36, 1],
+              delay: 0.15 + i * 0.04,
+            }}
           >
-            Шоня
-            <br />
-            Фильмсы
-          </motion.h1>
-        </div>
-
-        <motion.p
-          className="max-w-md text-sm uppercase tracking-[0.28em] text-[var(--color-text-muted)]"
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.35 }}
-        >
-          Фильмы. Сериалы. Рейтинги.
-        </motion.p>
-
-        <div className="mt-3 h-px w-[220px] overflow-hidden bg-[rgb(255_244_227_/_0.12)]">
-          <motion.div
-            className="h-full origin-left bg-[var(--color-accent)]"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: 2, ease: [0.77, 0, 0.18, 1] }}
-            onAnimationComplete={() => setExiting(true)}
-          />
-        </div>
+            {char === ' ' ? '\u00A0' : char}
+          </motion.span>
+        ))}
       </div>
+
+      {/* Progress line — bottom */}
+      <div className="absolute bottom-12 left-1/2 h-px w-[min(280px,60vw)] -translate-x-1/2 bg-[rgb(232_228_222_/_0.08)]">
+        <motion.div
+          className="h-full origin-left bg-[var(--color-accent)]"
+          style={{ scaleX: count / 100 }}
+          transition={{ duration: 0.1 }}
+        />
+      </div>
+
+      {/* Eyebrow — bottom left */}
+      <motion.span
+        className="absolute bottom-12 left-8 text-[0.55rem] uppercase tracking-[0.4em] text-[var(--color-text-muted)]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: count > 30 ? 1 : 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        Film archive
+      </motion.span>
     </motion.div>
   );
 }

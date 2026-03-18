@@ -19,6 +19,14 @@ export default function MagneticCursor() {
       return;
     }
 
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+
+    if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) {
+      return;
+    }
+
     setIsVisible(true);
     document.body.classList.add('cursor-ready');
 
@@ -67,9 +75,9 @@ export default function MagneticCursor() {
           translateY: '-50%',
           width: isHovering ? 42 : 24,
           height: isHovering ? 42 : 24,
-          border: `1px solid ${isHovering ? 'var(--color-accent)' : 'rgb(255 244 227 / 0.18)'}`,
-          background: isHovering ? 'rgb(201 184 154 / 0.06)' : 'transparent',
-          boxShadow: isHovering ? '0 0 0 8px rgb(201 184 154 / 0.05)' : 'none',
+          border: `1px solid ${isHovering ? 'var(--color-accent)' : 'rgb(220 218 216 / 0.15)'}`,
+          background: isHovering ? 'rgb(196 191 182 / 0.05)' : 'transparent',
+          boxShadow: isHovering ? '0 0 0 8px rgb(196 191 182 / 0.03)' : 'none',
           scale: isPressed ? 0.84 : 1,
         }}
       />
