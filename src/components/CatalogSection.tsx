@@ -420,7 +420,7 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
           ) : (
             filteredFilms.map((film, index) => (
               <FilmCard
-                key={`${film.kinopoiskId || film.filmId}-${index}`}
+                key={film.kinopoiskId ?? film.filmId ?? index}
                 film={film}
                 index={index}
                 onClick={onFilmClick}
