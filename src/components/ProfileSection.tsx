@@ -225,13 +225,13 @@ export default function ProfileSection({ onFilmClick }: ProfileSectionProps) {
 
           {/* Stats cards with glow */}
           <motion.div
-            className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 items-stretch"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.15, ease: EASE }}
           >
             {/* Films count */}
-            <div className="relative rounded-[1.5rem]">
+            <div className="relative rounded-[1.5rem] h-full">
               <GlowingEffect
                 spread={40}
                 glow
@@ -240,7 +240,7 @@ export default function ProfileSection({ onFilmClick }: ProfileSectionProps) {
                 inactiveZone={0.01}
                 borderWidth={2}
               />
-              <div className="glass-panel relative rounded-[1.5rem] px-6 py-5">
+              <div className="glass-panel relative rounded-[1.5rem] px-6 py-5 h-full">
                 <div className="text-[0.6rem] uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
                   Просмотрено
                 </div>
@@ -254,7 +254,7 @@ export default function ProfileSection({ onFilmClick }: ProfileSectionProps) {
             </div>
 
             {/* Total hours */}
-            <div className="relative rounded-[1.5rem]">
+            <div className="relative rounded-[1.5rem] h-full">
               <GlowingEffect
                 spread={40}
                 glow
@@ -263,7 +263,7 @@ export default function ProfileSection({ onFilmClick }: ProfileSectionProps) {
                 inactiveZone={0.01}
                 borderWidth={2}
               />
-              <div className="glass-panel relative rounded-[1.5rem] px-6 py-5">
+              <div className="glass-panel relative rounded-[1.5rem] px-6 py-5 h-full">
                 <div className="text-[0.6rem] uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
                   Время просмотра
                 </div>
@@ -279,7 +279,7 @@ export default function ProfileSection({ onFilmClick }: ProfileSectionProps) {
             </div>
 
             {/* Top genres */}
-            <div className="relative rounded-[1.5rem]">
+            <div className="relative rounded-[1.5rem] h-full">
               <GlowingEffect
                 spread={40}
                 glow
@@ -288,7 +288,7 @@ export default function ProfileSection({ onFilmClick }: ProfileSectionProps) {
                 inactiveZone={0.01}
                 borderWidth={2}
               />
-              <div className="glass-panel relative rounded-[1.5rem] px-6 py-5">
+              <div className="glass-panel relative rounded-[1.5rem] px-6 py-5 h-full">
                 <div className="text-[0.6rem] uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
                   Любимые жанры
                 </div>
@@ -310,7 +310,7 @@ export default function ProfileSection({ onFilmClick }: ProfileSectionProps) {
             </div>
 
             {/* Avg rating */}
-            <div className="relative rounded-[1.5rem]">
+            <div className="relative rounded-[1.5rem] h-full">
               <GlowingEffect
                 spread={40}
                 glow
@@ -319,7 +319,7 @@ export default function ProfileSection({ onFilmClick }: ProfileSectionProps) {
                 inactiveZone={0.01}
                 borderWidth={2}
               />
-              <div className="glass-panel relative rounded-[1.5rem] px-6 py-5">
+              <div className="glass-panel relative rounded-[1.5rem] px-6 py-5 h-full">
                 <div className="text-[0.6rem] uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
                   Средний рейтинг
                 </div>

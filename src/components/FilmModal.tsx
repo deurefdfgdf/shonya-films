@@ -32,7 +32,9 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
   const [staff, setStaff] = useState<StaffPerson[]>([]);
   const [similar, setSimilar] = useState<Film[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const promptTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const { user, isWatched, toggleWatched } = useAuth();
   const watched = filmId ? isWatched(filmId) : false;
 
@@ -41,6 +43,8 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
     setLoading(true);
     setFilm(null);
     setSimilar([]);
+    setShowPrompt(false);
+    clearTimeout(promptTimerRef.current);
 
     Promise.all([
       KinoAPI.getFilmById(filmId),
@@ -68,6 +72,27 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [onClose]);
+
+  const handleWatchClick = () => {
+    if (!filmId) return;
+    window.open(`https://www.sspoisk.ru/film/${filmId}/`, '_blank', 'noopener,noreferrer');
+    if (user && !watched) {
+      setShowPrompt(true);
+      clearTimeout(promptTimerRef.current);
+      promptTimerRef.current = setTimeout(() => setShowPrompt(false), 9000);
+    }
+  };
+
+  const handleMarkWatched = () => {
+    if (filmId) toggleWatched(filmId, title);
+    setShowPrompt(false);
+    clearTimeout(promptTimerRef.current);
+  };
+
+  const dismissPrompt = () => {
+    setShowPrompt(false);
+    clearTimeout(promptTimerRef.current);
+  };
 
   const isOpen = filmId !== null;
   const title = film ? getFilmTitle(film) : '';
@@ -238,10 +263,9 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                       <div className="text-[0.6rem] uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
                         Где смотреть
                       </div>
-                      <a
-                        href={`https://www.sspoisk.ru/film/${filmId}/`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
+                        onClick={handleWatchClick}
                         className="editorial-button editorial-button--solid mt-4 flex w-full items-center justify-between"
                         data-clickable
                       >
@@ -249,27 +273,52 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
                           <path d="M7 17L17 7M17 7H7M17 7v10" />
                         </svg>
-                      </a>
-                      {user ? (
-                        <button
-                          type="button"
-                          onClick={() => filmId && toggleWatched(filmId, title)}
-                          className={`mt-3 flex w-full items-center justify-between rounded-[var(--radius-full)] border px-4 py-2.5 text-[0.6rem] uppercase tracking-[0.18em] transition-all duration-300 ${
-                            watched
-                              ? 'border-[var(--color-success)] bg-[rgb(141_184_154_/_0.1)] text-[var(--color-success)]'
-                              : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]'
-                          }`}
-                          data-clickable
-                        >
-                          <span>{watched ? 'Просмотрен' : 'Просмотрено?'}</span>
+                      </button>
+
+                      {/* Watched indicator */}
+                      {user && watched && (
+                        <div className="mt-3 flex items-center justify-between rounded-[var(--radius-full)] border border-[var(--color-success)] bg-[rgb(141_184_154_/_0.1)] px-4 py-2.5 text-[0.6rem] uppercase tracking-[0.18em] text-[var(--color-success)]">
+                          <span>Просмотрен</span>
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
-                            {watched
-                              ? <path d="M5 12l5 5L20 7" strokeLinecap="round" strokeLinejoin="round" />
-                              : <circle cx="12" cy="12" r="9" />
-                            }
+                            <path d="M5 12l5 5L20 7" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
-                        </button>
-                      ) : null}
+                        </div>
+                      )}
+
+                      {/* Watched prompt */}
+                      <AnimatePresence>
+                        {showPrompt && !watched && user && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 6 }}
+                            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                            className="mt-3 rounded-[0.9rem] border border-[rgb(201_184_154_/_0.2)] bg-[rgb(201_184_154_/_0.04)] p-3"
+                          >
+                            <p className="text-[0.66rem] leading-relaxed text-[var(--color-text-secondary)]">
+                              Вы посмотрели этот фильм?
+                            </p>
+                            <div className="mt-2.5 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={handleMarkWatched}
+                                className="flex-1 rounded-full border border-[rgb(141_184_154_/_0.4)] bg-[rgb(141_184_154_/_0.1)] py-1.5 text-[0.58rem] uppercase tracking-[0.14em] text-[var(--color-success)] transition-colors hover:bg-[rgb(141_184_154_/_0.22)]"
+                                data-clickable
+                              >
+                                Да
+                              </button>
+                              <button
+                                type="button"
+                                onClick={dismissPrompt}
+                                className="flex-1 rounded-full border border-[var(--color-border)] py-1.5 text-[0.58rem] uppercase tracking-[0.14em] text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-border-strong)]"
+                                data-clickable
+                              >
+                                Позже
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </aside>
                   </div>
 
@@ -295,10 +344,9 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
 
                   {/* Mobile sticky CTA */}
                   <div className="sticky bottom-0 -mx-5 mt-5 border-t border-[var(--color-border)] bg-[rgb(10_10_10_/_0.96)] px-5 py-3 backdrop-blur-sm xl:hidden">
-                    <a
-                      href={`https://www.sspoisk.ru/film/${filmId}/`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={handleWatchClick}
                       className="editorial-button editorial-button--solid flex w-full items-center justify-between"
                       data-clickable
                     >
@@ -306,7 +354,7 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
                         <path d="M7 17L17 7M17 7H7M17 7v10" />
                       </svg>
-                    </a>
+                    </button>
                   </div>
                 </div>
               </div>
