@@ -30,7 +30,7 @@ interface AuthContextValue {
   loading: boolean;
   watchedFilms: Map<number, WatchedFilm>;
   isWatched: (id: number) => boolean;
-  toggleWatched: (id: number, title: string) => Promise<void>;
+  toggleWatched: (id: number, title: string) => Promise<boolean>;
   setFilmReaction: (id: number, reaction: 'liked' | 'neutral' | 'disliked') => Promise<void>;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -56,14 +56,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
     const colRef = collection(db, 'users', user.uid, 'watchedFilms');
-    const unsub = onSnapshot(colRef, (snapshot) => {
-      const map = new Map<number, WatchedFilm>();
-      snapshot.docs.forEach((d) => {
-        const id = parseInt(d.id, 10);
-        if (!isNaN(id)) map.set(id, d.data() as WatchedFilm);
-      });
-      setWatchedFilms(map);
-    });
+    const unsub = onSnapshot(
+      colRef,
+      (snapshot) => {
+        const map = new Map<number, WatchedFilm>();
+        snapshot.docs.forEach((d) => {
+          const id = parseInt(d.id, 10);
+          if (!isNaN(id)) map.set(id, d.data() as WatchedFilm);
+        });
+        setWatchedFilms(map);
+      },
+      (err) => {
+        console.error('[onSnapshot] Firestore read error:', err);
+      }
+    );
     return unsub;
   }, [user]);
 
@@ -73,13 +79,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const toggleWatched = useCallback(
-    async (kinopoiskId: number, title: string) => {
-      if (!user) return;
+    async (kinopoiskId: number, title: string): Promise<boolean> => {
+      if (!user) return false;
       const docRef = doc(db, 'users', user.uid, 'watchedFilms', String(kinopoiskId));
-      if (watchedFilms.has(kinopoiskId)) {
-        await deleteDoc(docRef);
-      } else {
-        await setDoc(docRef, { title, addedAt: serverTimestamp() });
+      try {
+        if (watchedFilms.has(kinopoiskId)) {
+          await deleteDoc(docRef);
+        } else {
+          await setDoc(docRef, { title, addedAt: serverTimestamp() });
+        }
+        return true;
+      } catch (err) {
+        console.error('[toggleWatched] Firestore error:', err);
+        return false;
       }
     },
     [user, watchedFilms]

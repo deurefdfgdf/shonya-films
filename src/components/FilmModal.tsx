@@ -33,6 +33,7 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
   const [similar, setSimilar] = useState<Film[]>([]);
   const [loading, setLoading] = useState(false);
   const [promptStep, setPromptStep] = useState<'watched' | 'reaction' | null>(null);
+  const [writeError, setWriteError] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const promptTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const { user, isWatched, toggleWatched, setFilmReaction } = useAuth();
@@ -44,6 +45,7 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
     setFilm(null);
     setSimilar([]);
     setPromptStep(null);
+    setWriteError(false);
     clearTimeout(promptTimerRef.current);
 
     Promise.all([
@@ -83,21 +85,28 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
     }
   };
 
-  const handleMarkWatched = () => {
-    if (filmId) toggleWatched(filmId, title);
+  const handleMarkWatched = async () => {
+    if (filmId === null) return;
+    setWriteError(false);
+    const ok = await toggleWatched(filmId, title);
+    if (!ok) {
+      setWriteError(true);
+      return;
+    }
     setPromptStep('reaction');
     clearTimeout(promptTimerRef.current);
     promptTimerRef.current = setTimeout(() => setPromptStep(null), 20000);
   };
 
   const handleReaction = (reaction: 'liked' | 'neutral' | 'disliked') => {
-    if (filmId) setFilmReaction(filmId, reaction);
+    if (filmId !== null) setFilmReaction(filmId, reaction);
     setPromptStep(null);
     clearTimeout(promptTimerRef.current);
   };
 
   const dismissPrompt = () => {
     setPromptStep(null);
+    setWriteError(false);
     clearTimeout(promptTimerRef.current);
   };
 
@@ -382,6 +391,11 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                           >
                             Нет, ещё не смотрел
                           </button>
+                          {writeError && (
+                            <p className="text-center text-[0.6rem] text-[#e05555]">
+                              Ошибка сохранения — проверьте правила Firestore
+                            </p>
+                          )}
                         </div>
                       </>
                     ) : (
