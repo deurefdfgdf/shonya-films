@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { KinoAPI, type Film, type FiltersResponse, filterFilms } from '@/lib/api';
@@ -392,7 +392,7 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
         />
       ) : null}
 
-      <section className="section-shell mt-14">
+      <section className="section-shell mt-14" style={{ overflowAnchor: 'none' } as React.CSSProperties}>
         <div className="mb-8 flex flex-col gap-2 text-[0.7rem] uppercase tracking-[0.26em] text-[var(--color-text-muted)] sm:flex-row sm:items-center sm:justify-between">
           <span>{loading ? 'Загрузка подборки' : `${filteredFilms.length} позиций`}</span>
           <span>

@@ -32,10 +32,10 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
   const [staff, setStaff] = useState<StaffPerson[]>([]);
   const [similar, setSimilar] = useState<Film[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showPrompt, setShowPrompt] = useState(false);
+  const [promptStep, setPromptStep] = useState<'watched' | 'reaction' | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const promptTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const { user, isWatched, toggleWatched } = useAuth();
+  const { user, isWatched, toggleWatched, setFilmReaction } = useAuth();
   const watched = filmId ? isWatched(filmId) : false;
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
     setLoading(true);
     setFilm(null);
     setSimilar([]);
-    setShowPrompt(false);
+    setPromptStep(null);
     clearTimeout(promptTimerRef.current);
 
     Promise.all([
@@ -77,20 +77,27 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
     if (!filmId) return;
     window.open(`https://www.sspoisk.ru/film/${filmId}/`, '_blank', 'noopener,noreferrer');
     if (user && !watched) {
-      setShowPrompt(true);
+      setPromptStep('watched');
       clearTimeout(promptTimerRef.current);
-      promptTimerRef.current = setTimeout(() => setShowPrompt(false), 9000);
+      promptTimerRef.current = setTimeout(() => setPromptStep(null), 20000);
     }
   };
 
   const handleMarkWatched = () => {
     if (filmId) toggleWatched(filmId, title);
-    setShowPrompt(false);
+    setPromptStep('reaction');
+    clearTimeout(promptTimerRef.current);
+    promptTimerRef.current = setTimeout(() => setPromptStep(null), 20000);
+  };
+
+  const handleReaction = (reaction: 'liked' | 'neutral' | 'disliked') => {
+    if (filmId) setFilmReaction(filmId, reaction);
+    setPromptStep(null);
     clearTimeout(promptTimerRef.current);
   };
 
   const dismissPrompt = () => {
-    setShowPrompt(false);
+    setPromptStep(null);
     clearTimeout(promptTimerRef.current);
   };
 
@@ -285,40 +292,6 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                         </div>
                       )}
 
-                      {/* Watched prompt */}
-                      <AnimatePresence>
-                        {showPrompt && !watched && user && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 6 }}
-                            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                            className="mt-3 rounded-[0.9rem] border border-[rgb(201_184_154_/_0.2)] bg-[rgb(201_184_154_/_0.04)] p-3"
-                          >
-                            <p className="text-[0.66rem] leading-relaxed text-[var(--color-text-secondary)]">
-                              Вы посмотрели этот фильм?
-                            </p>
-                            <div className="mt-2.5 flex gap-2">
-                              <button
-                                type="button"
-                                onClick={handleMarkWatched}
-                                className="flex-1 rounded-full border border-[rgb(141_184_154_/_0.4)] bg-[rgb(141_184_154_/_0.1)] py-1.5 text-[0.58rem] uppercase tracking-[0.14em] text-[var(--color-success)] transition-colors hover:bg-[rgb(141_184_154_/_0.22)]"
-                                data-clickable
-                              >
-                                Да
-                              </button>
-                              <button
-                                type="button"
-                                onClick={dismissPrompt}
-                                className="flex-1 rounded-full border border-[var(--color-border)] py-1.5 text-[0.58rem] uppercase tracking-[0.14em] text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-border-strong)]"
-                                data-clickable
-                              >
-                                Позже
-                              </button>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
                     </aside>
                   </div>
 
@@ -363,6 +336,103 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                 Ошибка загрузки
               </div>
             )}
+
+            {/* macOS-style overlay prompt */}
+            <AnimatePresence>
+              {promptStep && (
+                <motion.div
+                  className="absolute inset-0 z-30 flex items-center justify-center rounded-[inherit] bg-[rgb(0_0_0_/_0.6)] backdrop-blur-[10px]"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={dismissPrompt}
+                >
+                  <motion.div
+                    className="mx-6 w-full max-w-[300px] rounded-[1.8rem] border border-[rgb(255_255_255_/_0.08)] bg-[rgb(16_16_16_/_0.96)] p-6 shadow-2xl"
+                    initial={{ opacity: 0, scale: 0.88, y: 16 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.92, y: 8 }}
+                    transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {promptStep === 'watched' ? (
+                      <>
+                        <div className="mb-3 text-[0.58rem] uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
+                          Новый просмотр
+                        </div>
+                        <p className="text-[0.88rem] leading-snug text-[var(--color-text-secondary)]">
+                          Вы посмотрели{' '}
+                          <span className="text-[var(--color-text)]">{title}</span>?
+                        </p>
+                        <div className="mt-5 flex flex-col gap-2">
+                          <button
+                            type="button"
+                            onClick={handleMarkWatched}
+                            className="w-full rounded-[0.85rem] border border-[rgb(232_228_222_/_0.15)] bg-[rgb(232_228_222_/_0.08)] py-2.5 text-[0.63rem] uppercase tracking-[0.18em] text-[var(--color-text)] transition-colors hover:bg-[rgb(232_228_222_/_0.14)]"
+                            data-clickable
+                          >
+                            Да, посмотрел
+                          </button>
+                          <button
+                            type="button"
+                            onClick={dismissPrompt}
+                            className="w-full py-2 text-[0.6rem] uppercase tracking-[0.18em] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-secondary)]"
+                            data-clickable
+                          >
+                            Нет, ещё не смотрел
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="mb-3 text-[0.58rem] uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
+                          Ваша оценка
+                        </div>
+                        <p className="text-[0.88rem] leading-snug text-[var(--color-text-secondary)]">
+                          Как вам{' '}
+                          <span className="text-[var(--color-text)]">{title}</span>?
+                        </p>
+                        <div className="mt-5 flex flex-col gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleReaction('liked')}
+                            className="w-full rounded-[0.85rem] border border-[rgb(141_184_154_/_0.3)] bg-[rgb(141_184_154_/_0.07)] py-2.5 text-[0.63rem] uppercase tracking-[0.18em] text-[var(--color-success)] transition-colors hover:bg-[rgb(141_184_154_/_0.14)]"
+                            data-clickable
+                          >
+                            Понравился
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleReaction('neutral')}
+                            className="w-full rounded-[0.85rem] border border-[rgb(201_184_154_/_0.15)] bg-[rgb(201_184_154_/_0.04)] py-2.5 text-[0.63rem] uppercase tracking-[0.18em] text-[var(--color-text-secondary)] transition-colors hover:bg-[rgb(201_184_154_/_0.09)]"
+                            data-clickable
+                          >
+                            Нормально
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleReaction('disliked')}
+                            className="w-full rounded-[0.85rem] border border-[rgb(224_85_85_/_0.2)] bg-[rgb(224_85_85_/_0.05)] py-2.5 text-[0.63rem] uppercase tracking-[0.18em] text-[#e05555] transition-colors hover:bg-[rgb(224_85_85_/_0.1)]"
+                            data-clickable
+                          >
+                            Не понравился
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={dismissPrompt}
+                          className="mt-3 w-full py-1 text-[0.58rem] uppercase tracking-[0.16em] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-secondary)]"
+                          data-clickable
+                        >
+                          Пропустить
+                        </button>
+                      </>
+                    )}
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </motion.div>
       ) : null}

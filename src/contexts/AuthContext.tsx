@@ -13,6 +13,7 @@ import {
   doc,
   setDoc,
   deleteDoc,
+  updateDoc,
   onSnapshot,
   serverTimestamp,
 } from 'firebase/firestore';
@@ -21,6 +22,7 @@ import { auth, googleProvider, db } from '@/lib/firebase';
 interface WatchedFilm {
   title: string;
   addedAt: unknown;
+  reaction?: 'liked' | 'neutral' | 'disliked';
 }
 
 interface AuthContextValue {
@@ -29,6 +31,7 @@ interface AuthContextValue {
   watchedFilms: Map<number, WatchedFilm>;
   isWatched: (id: number) => boolean;
   toggleWatched: (id: number, title: string) => Promise<void>;
+  setFilmReaction: (id: number, reaction: 'liked' | 'neutral' | 'disliked') => Promise<void>;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
   watchedFilmTitles: string[];
@@ -82,6 +85,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user, watchedFilms]
   );
 
+  const setFilmReaction = useCallback(
+    async (kinopoiskId: number, reaction: 'liked' | 'neutral' | 'disliked') => {
+      if (!user) return;
+      const docRef = doc(db, 'users', user.uid, 'watchedFilms', String(kinopoiskId));
+      try {
+        await updateDoc(docRef, { reaction });
+      } catch {
+        // doc might not exist yet, ignore
+      }
+    },
+    [user]
+  );
+
   const handleSignIn = useCallback(async () => {
     try {
       await signInWithPopup(auth, googleProvider);
@@ -106,11 +122,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       watchedFilms,
       isWatched,
       toggleWatched,
+      setFilmReaction,
       signIn: handleSignIn,
       signOut: handleSignOut,
       watchedFilmTitles,
     }),
-    [user, loading, watchedFilms, isWatched, toggleWatched, handleSignIn, handleSignOut, watchedFilmTitles]
+    [user, loading, watchedFilms, isWatched, toggleWatched, setFilmReaction, handleSignIn, handleSignOut, watchedFilmTitles]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
