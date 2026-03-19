@@ -84,6 +84,7 @@ function sortFilms(films: Film[], order: SortOrder) {
 
 export default function CatalogSection({ type, onFilmClick }: CatalogSectionProps) {
   const [rawFilms, setRawFilms] = useState<Film[]>([]);
+  const [baseFilmsCount, setBaseFilmsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(PAGES_PER_LOAD);
@@ -162,6 +163,7 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
   const loadFilms = useCallback(async () => {
     setLoading(true);
     setRawFilms([]);
+    setBaseFilmsCount(0);
     setPage(PAGES_PER_LOAD);
 
     try {
@@ -200,6 +202,7 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
       }
 
       setRawFilms(result);
+      setBaseFilmsCount(result.length);
       setTotalPages(pagesCount);
     } catch {
       setRawFilms([]);
@@ -264,35 +267,28 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
     const hasYearFilter =
       yearRange[0] !== defaultYearRange[0] || yearRange[1] !== defaultYearRange[1];
 
-    const next = filterFilms(rawFilms).filter((film) => {
-      if (hasGenres) {
-        const filmGenres = film.genres?.map((genre) => genre.genre) || [];
-        if (!filmGenres.some((genre) => genres.has(genre))) {
-          return false;
+    const applyFilters = (films: Film[]) =>
+      filterFilms(films).filter((film) => {
+        if (hasGenres) {
+          const filmGenres = film.genres?.map((genre) => genre.genre) || [];
+          if (!filmGenres.some((genre) => genres.has(genre))) return false;
         }
-      }
-
-      if (hasCountries) {
-        const filmCountries = film.countries?.map((country) => country.country) || [];
-        if (!filmCountries.some((country) => countries.has(country))) {
-          return false;
+        if (hasCountries) {
+          const filmCountries = film.countries?.map((country) => country.country) || [];
+          if (!filmCountries.some((country) => countries.has(country))) return false;
         }
-      }
-
-      if (hasYearFilter) {
-        if (!film.year) {
-          return false;
+        if (hasYearFilter) {
+          if (!film.year) return false;
+          if (film.year < yearRange[0] || film.year > yearRange[1]) return false;
         }
-        if (film.year < yearRange[0] || film.year > yearRange[1]) {
-          return false;
-        }
-      }
+        return true;
+      });
 
-      return true;
-    });
-
-    return sortFilms(next, order);
-  }, [defaultYearRange, order, rawFilms, selectedCountries, selectedGenres, yearRange]);
+    // Sort base and extra batches independently so load-more never reorders existing films
+    const base = applyFilters(rawFilms.slice(0, baseFilmsCount));
+    const extra = applyFilters(rawFilms.slice(baseFilmsCount));
+    return [...sortFilms(base, order), ...sortFilms(extra, order)];
+  }, [defaultYearRange, order, rawFilms, baseFilmsCount, selectedCountries, selectedGenres, yearRange]);
 
   const loadMorePremieres = async () => {
     setLoadingMorePremieres(true);
