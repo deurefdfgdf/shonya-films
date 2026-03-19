@@ -292,8 +292,16 @@ export default function Header({ activeSection, onNavigate, onFilmClick }: Heade
                       </div>
                       <button
                         type="button"
-                        onClick={() => { signOut(); setProfileOpen(false); }}
+                        onClick={() => { onNavigate('profile'); setProfileOpen(false); }}
                         className="mt-2.5 w-full text-left text-[0.6rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)] transition-colors duration-200 hover:text-[var(--color-text)]"
+                        data-clickable
+                      >
+                        Личный кабинет
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { signOut(); setProfileOpen(false); }}
+                        className="mt-2 w-full text-left text-[0.6rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)] transition-colors duration-200 hover:text-[var(--color-text)]"
                         data-clickable
                       >
                         Выйти
@@ -422,14 +430,25 @@ export default function Header({ activeSection, onNavigate, onFilmClick }: Heade
                   ) : null}
                   <div>
                     <div className="text-[0.8rem] text-[var(--color-text-secondary)]">{user.displayName}</div>
-                    <button
-                      type="button"
-                      onClick={() => { signOut(); setMobileMenuOpen(false); }}
-                      className="text-[0.58rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
-                      data-clickable
-                    >
-                      Выйти
-                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => { onNavigate('profile'); setMobileMenuOpen(false); }}
+                        className="text-[0.58rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+                        data-clickable
+                      >
+                        Кабинет
+                      </button>
+                      <span className="text-[0.58rem] text-[var(--color-text-muted)]">·</span>
+                      <button
+                        type="button"
+                        onClick={() => { signOut(); setMobileMenuOpen(false); }}
+                        className="text-[0.58rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+                        data-clickable
+                      >
+                        Выйти
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (

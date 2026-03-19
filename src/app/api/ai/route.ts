@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL = 'openrouter/hunter-alpha';
+const MODEL = 'arcee-ai/trinity-large-preview:free';
 
 const SYSTEM_PROMPT = `Ты — эксперт по кино и сериалам. Отвечай ТОЛЬКО валидным JSON без markdown-блоков, без \`\`\`.
 Рекомендуй фильмы и сериалы всех стран и эпох.

@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { KinoAPI, type Film, type FiltersResponse, filterFilms } from '@/lib/api';
 import { MultipleSelector, type Option } from '@/components/ui/multiple-selector';
@@ -371,192 +371,25 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
       </section>
 
       {showFilters ? (
-        <section className="section-shell mt-12">
-          <motion.div
-            className="glass-panel relative overflow-visible rounded-[2rem] px-5 py-6 sm:px-7 sm:py-7 lg:px-8 lg:py-8"
-            initial={{ opacity: 0, y: 28 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div className="pointer-events-none absolute -right-24 top-0 h-56 w-56 rounded-full bg-[rgb(201_184_154_/_0.08)] blur-3xl" />
-            <div className="pointer-events-none absolute -left-16 bottom-0 h-40 w-40 rounded-full bg-[rgb(255_244_227_/_0.05)] blur-3xl" />
-
-            <div className="relative z-10 flex flex-col gap-8">
-              <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-                <div className="max-w-[34rem]">
-                  <div className="editorial-annotation">Фильтры</div>
-                  <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-secondary)] sm:text-[0.98rem]">
-                    Жанры и страны выбираются множественно с поиском, сортировка читается сразу, а диапазон лет задаётся одним контролом.
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-4 xl:items-end">
-                  <div className="flex flex-wrap items-center gap-3 rounded-[1.4rem] border border-[rgb(255_244_227_/_0.08)] bg-[rgb(255_244_227_/_0.03)] p-2">
-                    {SORT_OPTIONS.map((item) => {
-                      const active = item.value === order;
-
-                      return (
-                        <button
-                          key={item.value}
-                          type="button"
-                          onClick={() => setOrder(item.value)}
-                          className={cn(
-                            'inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[0.68rem] uppercase tracking-[0.2em] transition-all duration-300',
-                            active
-                              ? 'bg-[var(--color-accent)] text-black shadow-[0_10px_30px_rgb(201_184_154_/_0.16)]'
-                              : 'text-[var(--color-text-secondary)] hover:bg-[rgb(255_244_227_/_0.05)] hover:text-[var(--color-text)]'
-                          )}
-                          aria-pressed={active}
-                          data-clickable
-                        >
-                          <span
-                            className={cn(
-                              'h-2 w-2 rounded-full border',
-                              active ? 'border-black bg-black' : 'border-[rgb(255_244_227_/_0.22)] bg-transparent'
-                            )}
-                          />
-                          <span>{item.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="flex items-center gap-3 text-[0.68rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
-                    <span>Сейчас:</span>
-                    <span className="text-[var(--color-text)]">{currentSortLabel}</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={resetFilters}
-                    disabled={!hasAnyControls}
-                    className="editorial-button min-h-0 px-4 py-2"
-                    data-clickable
-                  >
-                    <span className="text-[0.68rem]">Сбросить фильтры</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid gap-8 border-t border-[rgb(255_244_227_/_0.08)] pt-7 lg:grid-cols-2">
-                <FilterField
-                  label="Жанры"
-                  meta={selectedGenres.length > 0 ? `${selectedGenres.length} выбрано` : 'Любые жанры'}
-                  description="Поиск по названию и множественный выбор без длинного списка."
-                >
-                  <MultipleSelector
-                    value={selectedGenres}
-                    onChange={setSelectedGenres}
-                    options={genreOptions}
-                    placeholder="Выбрать жанры"
-                    emptyIndicator={<span>Ничего не найдено</span>}
-                    hidePlaceholderWhenSelected
-                    selectFirstItem={false}
-                    maxSelected={6}
-                    className="w-full"
-                    badgeClassName="max-w-[12rem]"
-                  />
-                </FilterField>
-
-                <FilterField
-                  label="Страны"
-                  meta={selectedCountries.length > 0 ? `${selectedCountries.length} выбрано` : 'Любые страны'}
-                  description="Приоритетные страны подняты выше, остальные доступны через поиск."
-                >
-                  <MultipleSelector
-                    value={selectedCountries}
-                    onChange={setSelectedCountries}
-                    options={countryOptions}
-                    groupBy="group"
-                    placeholder="Выбрать страны"
-                    emptyIndicator={<span>Ничего не найдено</span>}
-                    hidePlaceholderWhenSelected
-                    selectFirstItem={false}
-                    maxSelected={6}
-                    className="w-full"
-                    badgeClassName="max-w-[12rem]"
-                  />
-                </FilterField>
-              </div>
-
-              <div className="border-t border-[rgb(255_244_227_/_0.08)] pt-7">
-                <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-                  <div>
-                    <div className="editorial-annotation">Годы</div>
-                    <div className="display-title mt-3 text-[clamp(2.5rem,5vw,4.6rem)] text-[var(--color-text)]">
-                      {yearRange[0]} — {yearRange[1]}
-                    </div>
-                    <p className="mt-3 max-w-[30rem] text-sm leading-relaxed text-[var(--color-text-secondary)]">
-                      Перетаскивайте диапазон или выбирайте быстрые эпохи, чтобы сузить подборку без перегрузки интерфейса.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 xl:max-w-[34rem] xl:justify-end">
-                    {yearPresets.map((preset) => {
-                      const active = yearRange[0] === preset.range[0] && yearRange[1] === preset.range[1];
-                      return (
-                        <button
-                          key={preset.label}
-                          type="button"
-                          onClick={() => setYearRange(preset.range)}
-                          className={cn(
-                            'rounded-full border px-3.5 py-2 text-[0.62rem] uppercase tracking-[0.2em] transition-all duration-300',
-                            active
-                              ? 'border-[rgb(255_244_227_/_0.26)] bg-[rgb(255_244_227_/_0.08)] text-[var(--color-text)]'
-                              : 'border-[rgb(255_244_227_/_0.1)] bg-transparent text-[var(--color-text-muted)] hover:border-[rgb(255_244_227_/_0.18)] hover:text-[var(--color-text)]'
-                          )}
-                          data-clickable
-                        >
-                          {preset.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="mt-8 rounded-[1.5rem] bg-[rgb(255_244_227_/_0.025)] px-4 py-6 sm:px-6">
-                  <div className="mb-4 flex items-center justify-between text-[0.64rem] uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
-                    <span>{MIN_YEAR}</span>
-                    <span>{currentYear}</span>
-                  </div>
-                  <DualRangeSlider
-                    value={yearRange}
-                    onValueChange={(value) => setYearRange([value[0], value[1]] as [number, number])}
-                    min={MIN_YEAR}
-                    max={currentYear}
-                    step={1}
-                    minStepsBetweenThumbs={1}
-                    className="py-3"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-4 border-t border-[rgb(255_244_227_/_0.08)] pt-6 xl:flex-row xl:items-center xl:justify-between">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <span className="text-[0.64rem] uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
-                    Активно
-                  </span>
-                  {activeChips.length > 0 ? (
-                    activeChips.map((chip) => (
-                      <span
-                        key={chip}
-                        className="rounded-full border border-[rgb(255_244_227_/_0.1)] bg-[rgb(255_244_227_/_0.04)] px-3 py-1.5 text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-text-secondary)]"
-                      >
-                        {chip}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-sm text-[var(--color-text-muted)]">Фильтры не выбраны</span>
-                  )}
-                </div>
-
-                <div className="text-[0.72rem] uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
-                  {filteredFilms.length} позиций после фильтрации
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </section>
+        <FilterPanel
+          order={order}
+          setOrder={setOrder}
+          selectedGenres={selectedGenres}
+          setSelectedGenres={setSelectedGenres}
+          selectedCountries={selectedCountries}
+          setSelectedCountries={setSelectedCountries}
+          yearRange={yearRange}
+          setYearRange={setYearRange}
+          defaultYearRange={defaultYearRange}
+          genreOptions={genreOptions}
+          countryOptions={countryOptions}
+          yearPresets={yearPresets}
+          resetFilters={resetFilters}
+          hasAnyControls={hasAnyControls}
+          activeFilterCount={activeFilterCount}
+          filteredCount={filteredFilms.length}
+          currentYear={currentYear}
+        />
       ) : null}
 
       <section className="section-shell mt-14">
@@ -622,31 +455,306 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
   );
 }
 
-function FilterField({
-  label,
-  meta,
-  description,
-  children,
+/* ─── Compact Filter Panel ─── */
+
+const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
+
+function FilterPanel({
+  order,
+  setOrder,
+  selectedGenres,
+  setSelectedGenres,
+  selectedCountries,
+  setSelectedCountries,
+  yearRange,
+  setYearRange,
+  defaultYearRange,
+  genreOptions,
+  countryOptions,
+  yearPresets,
+  resetFilters,
+  hasAnyControls,
+  activeFilterCount,
+  filteredCount,
+  currentYear,
 }: {
-  label: string;
-  meta: string;
-  description: string;
-  children: React.ReactNode;
+  order: SortOrder;
+  setOrder: (v: SortOrder) => void;
+  selectedGenres: Option[];
+  setSelectedGenres: (v: Option[]) => void;
+  selectedCountries: Option[];
+  setSelectedCountries: (v: Option[]) => void;
+  yearRange: [number, number];
+  setYearRange: (v: [number, number]) => void;
+  defaultYearRange: [number, number];
+  genreOptions: Option[];
+  countryOptions: Option[];
+  yearPresets: Array<{ label: string; range: [number, number] }>;
+  resetFilters: () => void;
+  hasAnyControls: boolean;
+  activeFilterCount: number;
+  filteredCount: number;
+  currentYear: number;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasYearFilter = yearRange[0] !== defaultYearRange[0] || yearRange[1] !== defaultYearRange[1];
+
+  // Removable active chips
+  const activeChips: Array<{ label: string; onRemove: () => void }> = [
+    ...selectedGenres.map((g) => ({
+      label: g.label,
+      onRemove: () => setSelectedGenres(selectedGenres.filter((x) => x.value !== g.value)),
+    })),
+    ...selectedCountries.map((c) => ({
+      label: c.label,
+      onRemove: () => setSelectedCountries(selectedCountries.filter((x) => x.value !== c.value)),
+    })),
+    ...(hasYearFilter
+      ? [{
+          label: `${yearRange[0]}–${yearRange[1]}`,
+          onRemove: () => setYearRange(defaultYearRange),
+        }]
+      : []),
+  ];
+
   return (
-    <div>
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <div className="editorial-annotation">{label}</div>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
-            {description}
-          </p>
+    <section className="section-shell mt-10">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: EASE }}
+      >
+        {/* Compact bar — always visible */}
+        <div className="glass-panel rounded-[1.5rem] px-4 py-3 sm:px-5 sm:py-4">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Toggle expand */}
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              className={cn(
+                'inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-[0.62rem] uppercase tracking-[0.2em] transition-all duration-300',
+                expanded
+                  ? 'border-[var(--color-accent)] bg-[rgb(201_184_154_/_0.1)] text-[var(--color-accent)]'
+                  : 'border-[rgb(255_244_227_/_0.12)] text-[var(--color-text-secondary)] hover:border-[rgb(255_244_227_/_0.25)]'
+              )}
+              data-clickable
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={cn('h-3.5 w-3.5 transition-transform duration-300', expanded && 'rotate-180')}
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+              <span>Фильтры</span>
+              {activeFilterCount > 0 && (
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-accent)] text-[0.5rem] font-medium text-black">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            {/* Sort pills — always visible */}
+            <div className="flex items-center gap-1 rounded-full border border-[rgb(255_244_227_/_0.08)] bg-[rgb(255_244_227_/_0.02)] p-1">
+              {SORT_OPTIONS.map((item) => {
+                const active = item.value === order;
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setOrder(item.value)}
+                    className={cn(
+                      'rounded-full px-3 py-1.5 text-[0.58rem] uppercase tracking-[0.18em] transition-all duration-300',
+                      active
+                        ? 'bg-[var(--color-accent)] text-black'
+                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
+                    )}
+                    data-clickable
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Year presets — always visible */}
+            <div className="hidden items-center gap-1 sm:flex">
+              {yearPresets.map((preset) => {
+                const active = yearRange[0] === preset.range[0] && yearRange[1] === preset.range[1];
+                return (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => setYearRange(preset.range)}
+                    className={cn(
+                      'rounded-full px-2.5 py-1.5 text-[0.56rem] uppercase tracking-[0.16em] transition-all duration-300',
+                      active
+                        ? 'bg-[rgb(255_244_227_/_0.1)] text-[var(--color-text)]'
+                        : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
+                    )}
+                    data-clickable
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Spacer */}
+            <div className="flex-1" />
+
+            {/* Count + reset */}
+            <span className="text-[0.58rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+              {filteredCount}
+            </span>
+            {hasAnyControls && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="text-[0.58rem] uppercase tracking-[0.18em] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
+                data-clickable
+              >
+                Сбросить
+              </button>
+            )}
+          </div>
+
+          {/* Active chips row */}
+          {activeChips.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {activeChips.map((chip) => (
+                <button
+                  key={chip.label}
+                  type="button"
+                  onClick={chip.onRemove}
+                  className="group inline-flex items-center gap-1.5 rounded-full border border-[rgb(255_244_227_/_0.1)] bg-[rgb(255_244_227_/_0.04)] px-2.5 py-1 text-[0.56rem] uppercase tracking-[0.16em] text-[var(--color-text-secondary)] transition-all hover:border-[rgb(224_85_85_/_0.3)] hover:text-[#e05555]"
+                  data-clickable
+                >
+                  {chip.label}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="h-2.5 w-2.5 opacity-50 group-hover:opacity-100">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        <span className="text-[0.62rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
-          {meta}
-        </span>
-      </div>
-      {children}
-    </div>
+
+        {/* Expanded panel */}
+        <AnimatePresence>
+          {expanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.35, ease: EASE }}
+              className="overflow-hidden"
+            >
+              <div className="glass-panel mt-2 rounded-[1.5rem] px-4 py-5 sm:px-6 sm:py-6">
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {/* Genres */}
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-[0.58rem] uppercase tracking-[0.22em] text-[var(--color-text-muted)]">Жанры</span>
+                      {selectedGenres.length > 0 && (
+                        <span className="text-[0.54rem] uppercase tracking-[0.18em] text-[var(--color-accent)]">{selectedGenres.length} выбрано</span>
+                      )}
+                    </div>
+                    <MultipleSelector
+                      value={selectedGenres}
+                      onChange={setSelectedGenres}
+                      options={genreOptions}
+                      placeholder="Поиск жанров..."
+                      emptyIndicator={<span>Не найдено</span>}
+                      hidePlaceholderWhenSelected
+                      selectFirstItem={false}
+                      maxSelected={6}
+                      className="w-full"
+                      badgeClassName="max-w-[10rem]"
+                    />
+                  </div>
+
+                  {/* Countries */}
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-[0.58rem] uppercase tracking-[0.22em] text-[var(--color-text-muted)]">Страны</span>
+                      {selectedCountries.length > 0 && (
+                        <span className="text-[0.54rem] uppercase tracking-[0.18em] text-[var(--color-accent)]">{selectedCountries.length} выбрано</span>
+                      )}
+                    </div>
+                    <MultipleSelector
+                      value={selectedCountries}
+                      onChange={setSelectedCountries}
+                      options={countryOptions}
+                      groupBy="group"
+                      placeholder="Поиск стран..."
+                      emptyIndicator={<span>Не найдено</span>}
+                      hidePlaceholderWhenSelected
+                      selectFirstItem={false}
+                      maxSelected={6}
+                      className="w-full"
+                      badgeClassName="max-w-[10rem]"
+                    />
+                  </div>
+                </div>
+
+                {/* Year slider */}
+                <div className="mt-6 border-t border-[rgb(255_244_227_/_0.06)] pt-5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[0.58rem] uppercase tracking-[0.22em] text-[var(--color-text-muted)]">Годы</span>
+                    <span className="text-[0.72rem] tabular-nums text-[var(--color-text-secondary)]">
+                      {yearRange[0]} — {yearRange[1]}
+                    </span>
+                  </div>
+
+                  {/* Mobile year presets */}
+                  <div className="mt-3 flex flex-wrap gap-1.5 sm:hidden">
+                    {yearPresets.map((preset) => {
+                      const active = yearRange[0] === preset.range[0] && yearRange[1] === preset.range[1];
+                      return (
+                        <button
+                          key={preset.label}
+                          type="button"
+                          onClick={() => setYearRange(preset.range)}
+                          className={cn(
+                            'rounded-full border px-2.5 py-1 text-[0.54rem] uppercase tracking-[0.16em] transition-all duration-300',
+                            active
+                              ? 'border-[rgb(255_244_227_/_0.25)] bg-[rgb(255_244_227_/_0.08)] text-[var(--color-text)]'
+                              : 'border-[rgb(255_244_227_/_0.08)] text-[var(--color-text-muted)]'
+                          )}
+                          data-clickable
+                        >
+                          {preset.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-4 px-1">
+                    <DualRangeSlider
+                      value={yearRange}
+                      onValueChange={(value) => setYearRange([value[0], value[1]] as [number, number])}
+                      min={MIN_YEAR}
+                      max={currentYear}
+                      step={1}
+                      minStepsBetweenThumbs={1}
+                      className="py-2"
+                    />
+                    <div className="mt-1 flex items-center justify-between text-[0.5rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                      <span>{MIN_YEAR}</span>
+                      <span>{currentYear}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </section>
   );
 }

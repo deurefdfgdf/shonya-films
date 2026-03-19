@@ -15,6 +15,7 @@ import Footer from '@/components/Footer';
 import Preloader from '@/components/Preloader';
 import MagneticCursor from '@/components/MagneticCursor';
 import AiAssistant from '@/components/AiAssistant';
+import ProfileSection from '@/components/ProfileSection';
 import { KinoAPI, type Film, filterFilms } from '@/lib/api';
 
 export default function Home() {
@@ -62,7 +63,11 @@ export default function Home() {
     void loadHome();
   }, [loadHome]);
 
+  const [navKey, setNavKey] = useState(0);
   const navigate = (nextSection: string) => {
+    if (nextSection === section) {
+      setNavKey((k) => k + 1);
+    }
     setSection(nextSection);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -124,7 +129,9 @@ export default function Home() {
               </div>
             </>
           ) : section === 'ai' ? (
-            <AiAssistant onFilmClick={openModal} />
+            <AiAssistant key={navKey} onFilmClick={openModal} />
+          ) : section === 'profile' ? (
+            <ProfileSection key={navKey} onFilmClick={openModal} />
           ) : (
             <CatalogSection type={section} onFilmClick={openModal} />
           )}

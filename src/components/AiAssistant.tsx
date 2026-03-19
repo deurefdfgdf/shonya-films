@@ -149,10 +149,10 @@ function AiLoadingView({ tags }: { tags?: string[] }) {
         <motion.div
           className="pointer-events-none absolute z-10"
           animate={{
-            x: ['10%', '55%', '85%', '10%', '55%', '85%', '10%'],
-            y: ['8%', '8%', '8%', '55%', '55%', '55%', '8%'],
+            x: ['2%', '42%', '78%', '78%', '42%', '2%', '2%'],
+            y: ['4%', '4%', '4%', '52%', '52%', '52%', '4%'],
           }}
-          transition={{ duration: 6, ease: 'easeInOut', repeat: Infinity }}
+          transition={{ duration: 4.5, ease: 'easeInOut', repeat: Infinity }}
         >
           <motion.div
             className="flex h-12 w-12 items-center justify-center rounded-full"
@@ -268,6 +268,49 @@ function ProbeCard({
               background: 'linear-gradient(180deg, rgb(5 5 5 / 0.05) 0%, rgb(5 5 5 / 0.14) 26%, rgb(5 5 5 / 0.82) 100%)',
             }}
           />
+          {/* Verdict overlay */}
+          <AnimatePresence>
+            {verdict && (
+              <motion.div
+                className="absolute inset-0 flex items-center justify-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                style={{
+                  background:
+                    verdict === 'liked'
+                      ? 'rgb(85 200 120 / 0.15)'
+                      : verdict === 'disliked'
+                        ? 'rgb(224 85 85 / 0.15)'
+                        : 'rgb(255 244 227 / 0.06)',
+                }}
+              >
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                  className={cn(
+                    'flex h-14 w-14 items-center justify-center rounded-full backdrop-blur-sm',
+                    verdict === 'liked' && 'bg-[rgb(85_200_120_/_0.25)] text-[#55c878]',
+                    verdict === 'disliked' && 'bg-[rgb(224_85_85_/_0.25)] text-[#e05555]',
+                    verdict === 'skipped' && 'bg-[rgb(255_244_227_/_0.12)] text-[var(--color-text-muted)]',
+                  )}
+                >
+                  {verdict === 'liked' && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="h-7 w-7"><path d="M20 6L9 17l-5-5" /></svg>
+                  )}
+                  {verdict === 'disliked' && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="h-7 w-7"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                  )}
+                  {verdict === 'skipped' && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="h-6 w-6"><path d="M5 12h14" /></svg>
+                  )}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
         <div className="px-4 pt-3">
           <h3 className="text-sm leading-tight text-[var(--color-text)]">{title}</h3>
@@ -365,7 +408,14 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
   };
 
   const setFilmFeedback = useCallback((filmId: number, verdict: 'liked' | 'disliked' | 'skipped') => {
-    setFeedback((prev) => ({ ...prev, [filmId]: verdict }));
+    setFeedback((prev) => {
+      if (prev[filmId] === verdict) {
+        const next = { ...prev };
+        delete next[filmId];
+        return next;
+      }
+      return { ...prev, [filmId]: verdict };
+    });
   }, []);
 
   const reset = () => {
@@ -727,7 +777,13 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
           {/* ─── Loading States ─── */}
           {isLoading && (
             <AiLoadingView
-              tags={phase === 'deep-loading' ? extractedTags : undefined}
+              tags={
+                phase === 'quick-loading'
+                  ? selectedMoods.flatMap((id) => MOOD_CARDS.find((m) => m.id === id)?.tags || [])
+                  : phase === 'deep-refine-loading'
+                    ? extractedTags
+                    : undefined
+              }
             />
           )}
 
