@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL = 'stepfun-ai/step-3.5-flash:free';
+const MODEL = 'minimax/minimax-m2.5:free';
 
 const SYSTEM_PROMPT = `Ты — кинокритик-эксперт с глубоким знанием мирового кинематографа. Отвечай ТОЛЬКО валидным JSON без markdown-блоков, без \`\`\`.
 
