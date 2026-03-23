@@ -14,6 +14,7 @@ import {
   collection,
   doc,
   setDoc,
+  getDoc,
   deleteDoc,
   updateDoc,
   onSnapshot,
@@ -28,9 +29,20 @@ interface WatchedFilm {
   reaction?: 'liked' | 'neutral' | 'disliked';
 }
 
+export interface AdminMessage {
+  id: string;
+  text: string;
+  createdAt: unknown;
+  targetUid?: string;
+}
+
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
+  isAdmin: boolean;
+  isAIBlocked: boolean;
+  isBanned: boolean;
+  adminMessages: AdminMessage[];
   watchedFilms: Map<number, WatchedFilm>;
   isWatched: (id: number) => boolean;
   toggleWatched: (id: number, title: string) => Promise<boolean>;
@@ -43,21 +55,125 @@ interface AuthContextValue {
   watchedWithReactions: Array<{ title: string; reaction?: string }>;
 }
 
+const ADMIN_EMAIL = 'pyfingg@gmail.com';
+
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [watchedFilms, setWatchedFilms] = useState<Map<number, WatchedFilm>>(new Map());
+  const [userRole, setUserRole] = useState<string>('user');
+  const [isAIBlocked, setIsAIBlocked] = useState(false);
+  const [isBanned, setIsBanned] = useState(false);
+  const [adminMessages, setAdminMessages] = useState<AdminMessage[]>([]);
+
+  const isAdmin = useMemo(
+    () => user?.email === ADMIN_EMAIL || userRole === 'admin',
+    [user, userRole]
+  );
+
+  // Sync/create user profile document on login
+  const syncUserProfile = useCallback(async (u: User) => {
+    const profileRef = doc(db, 'users', u.uid);
+    const publicRef = doc(db, 'publicProfiles', u.uid);
+
+    try {
+      const profileSnap = await getDoc(profileRef);
+      if (!profileSnap.exists()) {
+        // First login — create profile
+        const role = u.email === ADMIN_EMAIL ? 'admin' : 'user';
+        await setDoc(profileRef, {
+          displayName: u.displayName || '',
+          photoURL: u.photoURL || '',
+          email: u.email || '',
+          searchName: (u.displayName || '').toLowerCase(),
+          createdAt: serverTimestamp(),
+          lastActive: serverTimestamp(),
+          role,
+        });
+        setUserRole(role);
+      } else {
+        const data = profileSnap.data();
+        setUserRole(data.role || 'user');
+        // Update lastActive
+        await updateDoc(profileRef, { lastActive: serverTimestamp() }).catch(() => {});
+      }
+
+      // Sync public profile for search
+      await setDoc(publicRef, {
+        displayName: u.displayName || '',
+        searchName: (u.displayName || '').toLowerCase(),
+        photoURL: u.photoURL || '',
+        uid: u.uid,
+      }, { merge: true });
+    } catch (err) {
+      console.error('[syncUserProfile] error:', err);
+    }
+  }, []);
+
+  // Check if user is banned or AI-blocked
+  const checkAdminSettings = useCallback(async (uid: string) => {
+    try {
+      const settingsSnap = await getDoc(doc(db, 'admin', 'settings'));
+      if (settingsSnap.exists()) {
+        const data = settingsSnap.data();
+        const banned = (data.bannedUsers as string[] || []).includes(uid);
+        const aiBlocked = (data.aiBlockedUsers as string[] || []).includes(uid);
+        setIsBanned(banned);
+        setIsAIBlocked(aiBlocked);
+        return banned;
+      }
+    } catch {
+      // Admin settings might not exist yet or permission denied
+    }
+    return false;
+  }, []);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      if (u) {
+        const banned = await checkAdminSettings(u.uid);
+        if (banned) {
+          await firebaseSignOut(auth);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        setUser(u);
+        await syncUserProfile(u);
+      } else {
+        setUser(null);
+        setWatchedFilms(new Map());
+        setUserRole('user');
+        setIsAIBlocked(false);
+        setIsBanned(false);
+      }
       setLoading(false);
-      if (!u) setWatchedFilms(new Map());
     });
     return unsub;
-  }, []);
+  }, [syncUserProfile, checkAdminSettings]);
+
+  // Listen to admin messages for this user
+  useEffect(() => {
+    if (!user) { setAdminMessages([]); return; }
+    const unsub = onSnapshot(
+      collection(db, 'admin', 'messages', 'items'),
+      (snapshot) => {
+        const msgs: AdminMessage[] = [];
+        snapshot.docs.forEach((d) => {
+          const data = d.data();
+          // Show if broadcast (no targetUid) or targeted at this user
+          if (!data.targetUid || data.targetUid === user.uid) {
+            msgs.push({ id: d.id, text: data.text, createdAt: data.createdAt, targetUid: data.targetUid });
+          }
+        });
+        setAdminMessages(msgs);
+      },
+      () => {} // ignore errors (permission denied before admin creates it)
+    );
+    return unsub;
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -122,6 +238,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         await updateProfile(user, { displayName: name });
         await reload(user);
+        // Update Firestore profile and public profile
+        const searchName = name.toLowerCase();
+        await setDoc(doc(db, 'users', user.uid), { displayName: name, searchName }, { merge: true });
+        await setDoc(doc(db, 'publicProfiles', user.uid), { displayName: name, searchName, photoURL: user.photoURL || '', uid: user.uid }, { merge: true });
         setUser({ ...user });
         return true;
       } catch (err) {
@@ -141,6 +261,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const url = await getDownloadURL(storageRef);
         await updateProfile(user, { photoURL: url });
         await reload(user);
+        // Update Firestore profile and public profile
+        await setDoc(doc(db, 'users', user.uid), { photoURL: url }, { merge: true });
+        await setDoc(doc(db, 'publicProfiles', user.uid), { photoURL: url }, { merge: true });
         setUser({ ...user });
         return true;
       } catch (err) {
@@ -180,6 +303,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       loading,
+      isAdmin,
+      isAIBlocked,
+      isBanned,
+      adminMessages,
       watchedFilms,
       isWatched,
       toggleWatched,
@@ -191,7 +318,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       watchedFilmTitles,
       watchedWithReactions,
     }),
-    [user, loading, watchedFilms, isWatched, toggleWatched, setFilmReaction, updateNickname, uploadAvatar, handleSignIn, handleSignOut, watchedFilmTitles, watchedWithReactions]
+    [user, loading, isAdmin, isAIBlocked, isBanned, adminMessages, watchedFilms, isWatched, toggleWatched, setFilmReaction, updateNickname, uploadAvatar, handleSignIn, handleSignOut, watchedFilmTitles, watchedWithReactions]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { KinoAPI, type Film, type FiltersResponse, filterFilms } from '@/lib/api';
@@ -215,10 +215,10 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
     void loadFilms();
   }, [loadFilms]);
 
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
     const startPage = page + 1;
     const endPage = Math.min(startPage + PAGES_PER_LOAD - 1, totalPages);
-    if (startPage > totalPages) {
+    if (startPage > totalPages || loadingMore) {
       return;
     }
 
@@ -257,7 +257,23 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
     } finally {
       setLoadingMore(false);
     }
-  };
+  }, [page, totalPages, loadingMore, type]);
+
+  // Infinite scroll observer
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (loading || loadingMore || page >= totalPages || type === 'premieres') return;
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) loadMore(); },
+      { rootMargin: '400px' }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loading, loadingMore, page, totalPages, type, loadMore]);
 
   const filteredFilms = useMemo(() => {
     const genres = new Set(selectedGenres.map((item) => item.value));
@@ -425,23 +441,32 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
           )}
         </div>
 
-        {(showLoadMore || type === 'premieres') && !loading ? (
+        {/* Infinite scroll sentinel */}
+        {showLoadMore && !loading && (
+          <div ref={sentinelRef} className="flex justify-center pt-16">
+            {loadingMore && (
+              <div className="flex flex-col items-center gap-3 text-[var(--color-text-muted)]">
+                <div className="h-8 w-8 animate-spin rounded-full border border-[var(--color-border)] border-t-[var(--color-accent)]" />
+                <span className="text-[0.6rem] uppercase tracking-[0.24em]">Загрузка</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Manual button for premieres */}
+        {type === 'premieres' && !loading ? (
           <div className="flex justify-center pt-16">
             <motion.button
               type="button"
-              onClick={type === 'premieres' ? loadMorePremieres : loadMore}
-              disabled={type === 'premieres' ? loadingMorePremieres : loadingMore}
+              onClick={loadMorePremieres}
+              disabled={loadingMorePremieres}
               className="editorial-button"
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.98 }}
               data-clickable
             >
               <span className="text-[0.72rem]">
-                {(type === 'premieres' ? loadingMorePremieres : loadingMore)
-                  ? 'Загрузка...'
-                  : type === 'premieres'
-                    ? 'Загрузить следующий месяц'
-                    : 'Загрузить еще'}
+                {loadingMorePremieres ? 'Загрузка...' : 'Загрузить следующий месяц'}
               </span>
             </motion.button>
           </div>

@@ -122,6 +122,18 @@ export interface FilmsResponse {
   totalPages?: number;
 }
 
+export interface FilmVideo {
+  url: string;
+  name: string;
+  site: string;
+  type: string;
+}
+
+export interface FilmVideosResponse {
+  total: number;
+  items: FilmVideo[];
+}
+
 export interface FiltersResponse {
   genres: Array<{ id: number; genre: string }>;
   countries: Array<{ id: number; country: string }>;
@@ -169,6 +181,10 @@ export const KinoAPI = {
 
   getFilmStaff(id: number) {
     return request<StaffPerson[]>(`/v1/staff?filmId=${id}`);
+  },
+
+  getFilmVideos(id: number) {
+    return request<FilmVideosResponse>(`/v2.2/films/${id}/videos`);
   },
 
   getFilmsWithFilters(params: Record<string, string | number> = {}) {

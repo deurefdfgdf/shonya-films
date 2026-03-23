@@ -31,6 +31,7 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
   const [film, setFilm] = useState<Film | null>(null);
   const [staff, setStaff] = useState<StaffPerson[]>([]);
   const [similar, setSimilar] = useState<Film[]>([]);
+  const [trailerYtId, setTrailerYtId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [promptStep, setPromptStep] = useState<'watched' | 'reaction' | null>(null);
   const [writeError, setWriteError] = useState(false);
@@ -44,6 +45,7 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
     setLoading(true);
     setFilm(null);
     setSimilar([]);
+    setTrailerYtId(null);
     setPromptStep(null);
     setWriteError(false);
     clearTimeout(promptTimerRef.current);
@@ -60,6 +62,18 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
 
     KinoAPI.getSimilarFilms(filmId)
       .then((data) => setSimilar(data.items || []))
+      .catch(() => {});
+
+    KinoAPI.getFilmVideos(filmId)
+      .then((data) => {
+        const yt = data.items?.find(
+          (v) => v.site === 'YOUTUBE' && (v.type === 'TRAILER' || v.type === 'TEASER')
+        );
+        if (yt) {
+          const match = yt.url.match(/(?:v=|\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+          if (match) setTrailerYtId(match[1]);
+        }
+      })
       .catch(() => {});
   }, [filmId]);
 
@@ -169,9 +183,9 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                 </div>
               </div>
             ) : film ? (
-              <div className="grid max-h-[calc(100svh-2rem)] overflow-hidden lg:grid-cols-[minmax(260px,0.68fr)_minmax(0,1.32fr)]">
+              <div className="grid max-h-[calc(100svh-2rem)] lg:grid-cols-[minmax(260px,0.68fr)_minmax(0,1.32fr)]">
                 {/* Poster side */}
-                <div className="relative max-h-[13rem] overflow-hidden border-b border-[var(--color-border)] lg:max-h-none lg:border-b-0 lg:border-r">
+                <div className="relative max-h-[13rem] overflow-hidden border-b border-[var(--color-border)] lg:max-h-[calc(100svh-2rem)] lg:border-b-0 lg:border-r">
                   {posterUrl ? (
                     <img src={posterUrl} alt={title} className="h-full w-full object-cover" />
                   ) : (
@@ -303,6 +317,22 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
 
                     </aside>
                   </div>
+
+                  {/* Trailer */}
+                  {trailerYtId && (
+                    <section className="mt-8 border-t border-[var(--color-border)] pt-6">
+                      <h3 className="mb-4 text-[0.6rem] uppercase tracking-[0.22em] text-[var(--color-text-muted)]">Трейлер</h3>
+                      <div className="overflow-hidden rounded-[var(--radius-md)]" style={{ aspectRatio: '16/9' }}>
+                        <iframe
+                          src={`https://www.youtube.com/embed/${trailerYtId}?autoplay=1&mute=1&rel=0&modestbranding=1`}
+                          allow="autoplay; encrypted-media; fullscreen"
+                          allowFullScreen
+                          className="h-full w-full border-0"
+                          title="Трейлер"
+                        />
+                      </div>
+                    </section>
+                  )}
 
                   {/* Similar films */}
                   {similar.length > 0 ? (

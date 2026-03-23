@@ -30,7 +30,7 @@ export default function Header({ activeSection, onNavigate, onFilmClick }: Heade
   const searchRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { user, signIn, signOut } = useAuth();
+  const { user, signIn, signOut, isAdmin } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 24);
@@ -177,6 +177,49 @@ export default function Header({ activeSection, onNavigate, onFilmClick }: Heade
               </svg>
               ИИ Подбор
             </button>
+
+            {/* Friends button */}
+            {user && (
+              <button
+                type="button"
+                onClick={() => { onNavigate('friends'); setMobileMenuOpen(false); }}
+                className="hidden items-center gap-1.5 rounded-full border px-3.5 py-2 text-[0.56rem] uppercase tracking-[0.22em] transition-all duration-300 hover:bg-[rgb(154_184_154_/_0.08)] md:inline-flex"
+                style={{
+                  borderColor: activeSection === 'friends' ? 'rgb(154 184 154)' : 'var(--color-border-strong)',
+                  color: activeSection === 'friends' ? 'rgb(154 184 154)' : 'var(--color-text-secondary)',
+                  background: activeSection === 'friends' ? 'rgb(154 184 154 / 0.1)' : 'transparent',
+                }}
+                data-clickable
+              >
+                <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+                </svg>
+                Друзья
+              </button>
+            )}
+
+            {/* Admin button */}
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => { onNavigate('admin'); setMobileMenuOpen(false); }}
+                className="hidden items-center gap-1.5 rounded-full border px-3.5 py-2 text-[0.56rem] uppercase tracking-[0.22em] transition-all duration-300 hover:bg-[rgb(184_114_114_/_0.08)] md:inline-flex"
+                style={{
+                  borderColor: activeSection === 'admin' ? 'var(--color-danger)' : 'var(--color-border-strong)',
+                  color: activeSection === 'admin' ? 'var(--color-danger)' : 'var(--color-text-secondary)',
+                  background: activeSection === 'admin' ? 'rgb(184 114 114 / 0.1)' : 'transparent',
+                }}
+                data-clickable
+              >
+                <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                  <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+                </svg>
+                Админ
+              </button>
+            )}
 
             {/* Search */}
             <div ref={searchRef} className="relative w-[10rem] sm:w-[13rem] lg:w-[16rem]">
@@ -414,6 +457,33 @@ export default function Header({ activeSection, onNavigate, onFilmClick }: Heade
                   ИИ Подбор
                 </span>
               </motion.button>
+
+              {user && (
+                <motion.button
+                  type="button"
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4, delay: (NAV_ITEMS.length + 1) * 0.06, ease: [0.22, 1, 0.36, 1] }}
+                  onClick={() => {
+                    onNavigate('friends');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-3 py-3 text-left"
+                  data-clickable
+                >
+                  <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="rgb(154 184 154)" strokeWidth="1.5">
+                    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+                  </svg>
+                  <span
+                    className="display-title text-[clamp(1.8rem,6vw,2.5rem)]"
+                    style={{ color: 'rgb(154 184 154)' }}
+                  >
+                    Друзья
+                  </span>
+                </motion.button>
+              )}
             </nav>
 
             {/* Mobile auth */}

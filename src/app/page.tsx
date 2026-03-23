@@ -17,6 +17,8 @@ import Preloader from '@/components/Preloader';
 import MagneticCursor from '@/components/MagneticCursor';
 import AiAssistant from '@/components/AiAssistant';
 import ProfileSection from '@/components/ProfileSection';
+import AdminSection from '@/components/AdminSection';
+import FriendsSection from '@/components/FriendsSection';
 import { KinoAPI, type Film, filterFilms } from '@/lib/api';
 
 export default function Home() {
@@ -147,6 +149,10 @@ export default function Home() {
             <AiAssistant key={navKey} onFilmClick={openModal} />
           ) : section === 'profile' ? (
             <ProfileSection key={navKey} onFilmClick={openModal} />
+          ) : section === 'admin' ? (
+            <AdminSection key={navKey} />
+          ) : section === 'friends' ? (
+            <FriendsSection key={navKey} onFilmClick={openModal} />
           ) : (
             <CatalogSection type={section} onFilmClick={openModal} />
           )}
