@@ -75,29 +75,42 @@ export async function sendFriendRequest(
     fromName: string,
     fromPhoto: string
 ): Promise<void> {
-    // Check if request already exists
-    const existing = await getDocs(
-        query(
-            collection(db, 'friendRequests'),
-            where('from', '==', from),
-            where('to', '==', to)
-        )
-    );
-    if (!existing.empty) return; // Already sent
-
-    // Check reverse direction
-    const reverse = await getDocs(
-        query(
-            collection(db, 'friendRequests'),
-            where('from', '==', to),
-            where('to', '==', from)
-        )
-    );
-    if (!reverse.empty) return; // They already sent one to us
-
     // Check if already friends
     const friendDoc = await getDoc(doc(db, 'users', from, 'friends', to));
     if (friendDoc.exists()) return;
+
+    // Check existing requests in both directions
+    const [existingSnap, reverseSnap] = await Promise.all([
+        getDocs(query(
+            collection(db, 'friendRequests'),
+            where('from', '==', from),
+            where('to', '==', to)
+        )),
+        getDocs(query(
+            collection(db, 'friendRequests'),
+            where('from', '==', to),
+            where('to', '==', from)
+        )),
+    ]);
+
+    // Clean up old accepted/rejected requests so we can re-add
+    const cleanupPromises: Promise<void>[] = [];
+    existingSnap.docs.forEach((d) => {
+        const status = d.data().status;
+        if (status === 'pending') return; // Don't touch pending ones
+        cleanupPromises.push(deleteDoc(doc(db, 'friendRequests', d.id)));
+    });
+    reverseSnap.docs.forEach((d) => {
+        const status = d.data().status;
+        if (status === 'pending') return;
+        cleanupPromises.push(deleteDoc(doc(db, 'friendRequests', d.id)));
+    });
+    if (cleanupPromises.length > 0) await Promise.all(cleanupPromises);
+
+    // Block only if there's a pending request
+    const hasPendingOutgoing = existingSnap.docs.some((d) => d.data().status === 'pending');
+    const hasPendingIncoming = reverseSnap.docs.some((d) => d.data().status === 'pending');
+    if (hasPendingOutgoing || hasPendingIncoming) return;
 
     await addDoc(collection(db, 'friendRequests'), {
         from,

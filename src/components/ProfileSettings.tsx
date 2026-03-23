@@ -13,13 +13,15 @@ interface ProfileSettingsProps {
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function ProfileSettings({ open, onClose }: ProfileSettingsProps) {
-  const { user, updateNickname, uploadAvatar } = useAuth();
+  const { user, updateNickname, uploadAvatar, deleteAccount } = useAuth();
   const [nickname, setNickname] = useState('');
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [soundsOn, setSoundsOn] = useState(true);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -29,6 +31,7 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
       setAvatarFile(null);
       setError('');
       setSoundsOn(getSoundsEnabled());
+      setConfirmDelete(false);
     }
   }, [open, user]);
 
@@ -86,6 +89,17 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
 
     setSaving(false);
     onClose();
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    const ok = await deleteAccount();
+    setDeleting(false);
+    if (ok) {
+      onClose();
+    } else {
+      setError('Ошибка удаления. Войдите заново и попробуйте ещё раз.');
+    }
   };
 
   const currentAvatar = avatarPreview || user?.photoURL || '';
@@ -183,19 +197,17 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
                   setSoundsOn(next);
                   setSoundsEnabled(next);
                 }}
-                className={`relative h-6 w-11 rounded-full border transition-colors duration-300 ${
-                  soundsOn
+                className={`relative h-6 w-11 rounded-full border transition-colors duration-300 ${soundsOn
                     ? 'border-[rgb(201_184_154_/_0.3)] bg-[rgb(201_184_154_/_0.2)]'
                     : 'border-[rgb(255_255_255_/_0.08)] bg-[rgb(255_255_255_/_0.04)]'
-                }`}
+                  }`}
                 data-clickable
               >
                 <div
-                  className={`absolute top-0.5 h-4 w-4 rounded-full transition-all duration-300 ${
-                    soundsOn
+                  className={`absolute top-0.5 h-4 w-4 rounded-full transition-all duration-300 ${soundsOn
                       ? 'left-[1.35rem] bg-[var(--color-accent)]'
                       : 'left-0.5 bg-[var(--color-text-muted)]'
-                  }`}
+                    }`}
                 />
               </button>
             </div>
@@ -224,6 +236,45 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
               >
                 Отмена
               </button>
+            </div>
+
+            {/* Delete Account */}
+            <div className="mt-6 border-t border-[var(--color-border)] pt-5">
+              {confirmDelete ? (
+                <div className="text-center">
+                  <p className="text-[0.65rem] text-[var(--color-danger)]">
+                    Все данные будут удалены безвозвратно. Вы уверены?
+                  </p>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      className="flex-1 rounded-[0.85rem] border border-[var(--color-danger)] bg-[rgb(184_114_114_/_0.1)] py-2 text-[0.58rem] uppercase tracking-[0.16em] text-[var(--color-danger)] transition-colors hover:bg-[rgb(184_114_114_/_0.2)] disabled:opacity-50"
+                      data-clickable
+                    >
+                      {deleting ? 'Удаление...' : 'Да, удалить'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(false)}
+                      className="flex-1 rounded-[0.85rem] border border-[var(--color-border)] py-2 text-[0.58rem] uppercase tracking-[0.16em] text-[var(--color-text-muted)]"
+                      data-clickable
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  className="w-full py-2 text-[0.55rem] uppercase tracking-[0.16em] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-danger)]"
+                  data-clickable
+                >
+                  Удалить аккаунт
+                </button>
+              )}
             </div>
           </motion.div>
         </motion.div>

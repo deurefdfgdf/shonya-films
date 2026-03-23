@@ -51,6 +51,7 @@ interface AuthContextValue {
   uploadAvatar: (file: File) => Promise<boolean>;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<boolean>;
   watchedFilmTitles: string[];
   watchedWithReactions: Array<{ title: string; reaction?: string }>;
 }
@@ -97,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = profileSnap.data();
         setUserRole(data.role || 'user');
         // Update lastActive
-        await updateDoc(profileRef, { lastActive: serverTimestamp() }).catch(() => {});
+        await updateDoc(profileRef, { lastActive: serverTimestamp() }).catch(() => { });
       }
 
       // Sync public profile for search
@@ -154,23 +155,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsub;
   }, [syncUserProfile, checkAdminSettings]);
 
-  // Listen to admin messages for this user
+  // Listen to notifications for this user (written by admin to user's subcollection)
   useEffect(() => {
     if (!user) { setAdminMessages([]); return; }
     const unsub = onSnapshot(
-      collection(db, 'admin', 'messages', 'items'),
+      collection(db, 'users', user.uid, 'notifications'),
       (snapshot) => {
         const msgs: AdminMessage[] = [];
         snapshot.docs.forEach((d) => {
           const data = d.data();
-          // Show if broadcast (no targetUid) or targeted at this user
-          if (!data.targetUid || data.targetUid === user.uid) {
-            msgs.push({ id: d.id, text: data.text, createdAt: data.createdAt, targetUid: data.targetUid });
-          }
+          msgs.push({ id: d.id, text: data.text, createdAt: data.createdAt, targetUid: data.targetUid });
         });
         setAdminMessages(msgs);
       },
-      () => {} // ignore errors (permission denied before admin creates it)
+      () => { } // ignore errors
     );
     return unsub;
   }, [user]);
@@ -286,6 +284,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await firebaseSignOut(auth);
   }, []);
 
+  const deleteAccount = useCallback(async (): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      // Delete Firestore data
+      await Promise.allSettled([
+        deleteDoc(doc(db, 'users', user.uid)),
+        deleteDoc(doc(db, 'publicProfiles', user.uid)),
+      ]);
+      // Delete Firebase Auth account
+      await user.delete();
+      return true;
+    } catch (err) {
+      console.error('[deleteAccount] error:', err);
+      // If re-auth required, just sign out
+      await firebaseSignOut(auth);
+      return false;
+    }
+  }, [user]);
+
   const watchedFilmTitles = useMemo(
     () => Array.from(watchedFilms.values()).map((f) => f.title).slice(0, 50),
     [watchedFilms]
@@ -315,10 +332,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       uploadAvatar,
       signIn: handleSignIn,
       signOut: handleSignOut,
+      deleteAccount,
       watchedFilmTitles,
       watchedWithReactions,
     }),
-    [user, loading, isAdmin, isAIBlocked, isBanned, adminMessages, watchedFilms, isWatched, toggleWatched, setFilmReaction, updateNickname, uploadAvatar, handleSignIn, handleSignOut, watchedFilmTitles, watchedWithReactions]
+    [user, loading, isAdmin, isAIBlocked, isBanned, adminMessages, watchedFilms, isWatched, toggleWatched, setFilmReaction, updateNickname, uploadAvatar, handleSignIn, handleSignOut, deleteAccount, watchedFilmTitles, watchedWithReactions]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
