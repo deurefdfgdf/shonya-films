@@ -79,9 +79,11 @@ ${(skipped as string[]).length > 0 ? `Не смотрел: ${(skipped as string[
       }];
     }
     case 'roulette': {
+      // Pass a random seed to avoid AI or API caching the same films
+      const seed = Math.random().toString(36).substring(7);
       return [{
         role: 'user',
-        content: `${watchedNote}Пользователь хочет рулетку — случайный фильм на вечер.
+        content: `${watchedNote}Пользователь хочет рулетку — случайный фильм на вечер. (Зерно для уникальности: ${seed})
 Подбери 8 ОЧЕНЬ разных фильмов: разные жанры, эпохи, страны. Включи неожиданные варианты.
 ${watchedNote ? 'Учитывай вкус пользователя но предлагай и что-то новое неожиданное.' : ''}
 Верни JSON: { "films": [{ "name": "Название", "year": 2020 }, ...] }`,

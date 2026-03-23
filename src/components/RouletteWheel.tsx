@@ -54,7 +54,13 @@ export default function RouletteWheel({ onFilmClick, onBack }: RouletteWheelProp
     if (films.length === 0) return;
     setPhase('spinning');
 
-    const winner = Math.floor(Math.random() * films.length);
+    let winner = Math.floor(Math.random() * films.length);
+    if (films.length > 1) {
+      // Prevent selecting the same film twice in a row
+      while (winner === winnerIndex) {
+        winner = Math.floor(Math.random() * films.length);
+      }
+    }
     setWinnerIndex(winner);
 
     // Calculate angle: each segment, multiple full rotations + landing on winner

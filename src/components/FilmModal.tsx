@@ -62,19 +62,38 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
 
     KinoAPI.getSimilarFilms(filmId)
       .then((data) => setSimilar(data.items || []))
-      .catch(() => {});
+      .catch(() => { });
 
     KinoAPI.getFilmVideos(filmId)
       .then((data) => {
+        // Find a YouTube trailer
         const yt = data.items?.find(
-          (v) => v.site === 'YOUTUBE' && (v.type === 'TRAILER' || v.type === 'TEASER')
+          (v) =>
+            v.site?.toUpperCase() === 'YOUTUBE' ||
+            v.url?.toLowerCase().includes('youtube.com') ||
+            v.url?.toLowerCase().includes('youtu.be')
         );
+
         if (yt) {
-          const match = yt.url.match(/(?:v=|\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-          if (match) setTrailerYtId(match[1]);
+          const ytUrl = yt.url;
+          // Extract video ID from youtube URL
+          const match = ytUrl.match(
+            /(?:v=|\/embed\/|\/v\/|youtu\.be\/|\/watch\?v=)([a-zA-Z0-9_-]{11})/
+          );
+          if (match && match[1]) {
+            setTrailerYtId(match[1]);
+          } else {
+            try {
+              const urlObj = new URL(ytUrl);
+              const v = urlObj.searchParams.get('v');
+              if (v) setTrailerYtId(v);
+            } catch (e) {
+              // Ignore invalid urls
+            }
+          }
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [filmId]);
 
   useEffect(() => {
@@ -207,7 +226,7 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                 </div>
 
                 {/* Content side */}
-                <div ref={scrollRef} className="overflow-y-auto overscroll-contain px-5 py-5 sm:px-7 sm:py-6">
+                <div ref={scrollRef} className="relative flex flex-col min-h-0 overflow-y-auto overscroll-contain px-5 py-5 pb-10 sm:px-7 sm:py-6 sm:pb-8">
                   <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_240px]">
                     <div>
                       <h2 className="display-title text-[clamp(2.4rem,4.5vw,4.2rem)] text-[var(--color-text)]">
@@ -340,7 +359,7 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                       <h3 className="mb-4 text-[0.6rem] uppercase tracking-[0.22em] text-[var(--color-text-muted)]">
                         Похожие фильмы
                       </h3>
-                      <div className="flex gap-3 overflow-x-auto scroll-hide pb-2">
+                      <div className="flex gap-3 overflow-x-auto scroll-smooth pb-4">
                         {similar.slice(0, 8).map((item, index) => (
                           <FilmCard
                             key={getFilmId(item) || index}
