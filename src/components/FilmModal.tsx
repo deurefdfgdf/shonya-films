@@ -202,7 +202,7 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                 </div>
               </div>
             ) : film ? (
-              <div className="grid max-h-[calc(100svh-2rem)] lg:grid-cols-[minmax(260px,0.68fr)_minmax(0,1.32fr)]">
+              <div className="flex flex-col lg:grid max-h-[calc(100svh-2rem)] lg:grid-cols-[minmax(260px,0.68fr)_minmax(0,1.32fr)] overflow-hidden">
                 {/* Poster side */}
                 <div className="relative max-h-[13rem] overflow-hidden border-b border-[var(--color-border)] lg:max-h-[calc(100svh-2rem)] lg:border-b-0 lg:border-r">
                   {posterUrl ? (
@@ -334,24 +334,25 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                         </div>
                       )}
 
+                      {/* Mini Trailer */}
+                      {trailerYtId && (
+                        <div className="mt-4 pt-4 border-t border-[rgb(255_255_255_/_0.04)]">
+                          <div className="mb-2.5 text-[0.55rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                            Трейлер
+                          </div>
+                          <div className="overflow-hidden rounded-[var(--radius-md)] bg-black" style={{ aspectRatio: '16/9' }}>
+                            <iframe
+                              src={`https://www.youtube.com/embed/${trailerYtId}?rel=0&modestbranding=1`}
+                              allow="encrypted-media; fullscreen"
+                              allowFullScreen
+                              className="h-full w-full border-0"
+                              title="Трейлер"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </aside>
                   </div>
-
-                  {/* Trailer */}
-                  {trailerYtId && (
-                    <section className="mt-8 border-t border-[var(--color-border)] pt-6">
-                      <h3 className="mb-4 text-[0.6rem] uppercase tracking-[0.22em] text-[var(--color-text-muted)]">Трейлер</h3>
-                      <div className="overflow-hidden rounded-[var(--radius-md)]" style={{ aspectRatio: '16/9' }}>
-                        <iframe
-                          src={`https://www.youtube.com/embed/${trailerYtId}?autoplay=1&mute=1&rel=0&modestbranding=1`}
-                          allow="autoplay; encrypted-media; fullscreen"
-                          allowFullScreen
-                          className="h-full w-full border-0"
-                          title="Трейлер"
-                        />
-                      </div>
-                    </section>
-                  )}
 
                   {/* Similar films */}
                   {similar.length > 0 ? (
