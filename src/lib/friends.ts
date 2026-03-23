@@ -149,6 +149,10 @@ export async function rejectFriendRequest(requestId: string): Promise<void> {
     await updateDoc(doc(db, 'friendRequests', requestId), { status: 'rejected' });
 }
 
+export async function cancelFriendRequest(requestId: string): Promise<void> {
+    await deleteDoc(doc(db, 'friendRequests', requestId));
+}
+
 export async function getPendingRequests(uid: string): Promise<FriendRequest[]> {
     const snap = await getDocs(
         query(

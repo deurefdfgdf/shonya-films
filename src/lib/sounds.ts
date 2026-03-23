@@ -4,7 +4,7 @@
  */
 
 let audioCtx: AudioContext | null = null;
-let enabled = true;
+let enabled = false;
 
 function getContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -16,7 +16,7 @@ function getContext(): AudioContext | null {
     }
   }
   if (audioCtx.state === 'suspended') {
-    audioCtx.resume().catch(() => {});
+    audioCtx.resume().catch(() => { });
   }
   return audioCtx;
 }
@@ -29,7 +29,7 @@ export function setSoundsEnabled(value: boolean) {
 }
 
 export function getSoundsEnabled(): boolean {
-  if (typeof window === 'undefined') return true;
+  if (typeof window === 'undefined') return false;
   const stored = localStorage.getItem('shonya-sounds');
   if (stored !== null) {
     enabled = stored === '1';
