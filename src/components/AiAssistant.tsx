@@ -10,8 +10,10 @@ import {
   resolveFilmNames,
 } from '@/lib/ai';
 import FilmCard from './FilmCard';
+import RouletteWheel from './RouletteWheel';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { playToggleOn, playToggleOff, playSuccess } from '@/lib/sounds';
 
 interface AiAssistantProps {
   onFilmClick: (id: number) => void;
@@ -27,6 +29,7 @@ type AiPhase =
   | 'deep-probe'
   | 'deep-refine-loading'
   | 'deep-results'
+  | 'roulette'
   | 'error';
 
 const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number];
@@ -402,6 +405,8 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
   const { watchedFilmTitles, watchedWithReactions } = useAuth();
 
   const toggleMood = (id: string) => {
+    const removing = selectedMoods.includes(id);
+    if (removing) playToggleOff(); else playToggleOn();
     setSelectedMoods((prev) =>
       prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]
     );
@@ -441,6 +446,7 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
       const response = await getQuickRecommendations(allTags, watchedFilmTitles, watchedWithReactions);
       const films = await resolveFilmNames(response.films);
       setResultFilms(films);
+      playSuccess();
       setPhase('quick-results');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Произошла ошибка');
@@ -503,6 +509,7 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
         }
       }
       setResultReasons(resolvedReasons);
+      playSuccess();
       setPhase('deep-results');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Произошла ошибка');
@@ -524,6 +531,7 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
     'deep-probe': 'Оцените фильмы',
     'deep-refine-loading': 'Уточняем подбор',
     'deep-results': 'Ваша подборка',
+    roulette: 'Рулетка',
     error: 'Ошибка',
   };
 
@@ -537,6 +545,7 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
     'deep-probe': 'Отметьте фильмы чтобы ИИ лучше понял ваш вкус. Потом мы подберём точнее.',
     'deep-refine-loading': 'ИИ учитывает вашу обратную связь и подбирает финальные рекомендации...',
     'deep-results': 'Финальная подборка, настроенная под ваш вкус.',
+    roulette: 'Крутите рулетку — судьба выберет фильм за вас.',
     error: 'Что-то пошло не так.',
   };
 
@@ -585,7 +594,7 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4, ease: EASE }}
-              className="grid gap-6 lg:grid-cols-2"
+              className="grid gap-6 lg:grid-cols-3"
             >
               <motion.button
                 type="button"
@@ -635,6 +644,29 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
                 <div className="mt-6 flex items-center gap-2 text-[0.68rem] uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
                   <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[rgb(255_244_227_/_0.15)] text-[0.56rem]">3</span>
                   шага → точный результат
+                </div>
+              </motion.button>
+
+              <motion.button
+                type="button"
+                onClick={() => setPhase('roulette')}
+                className="glass-panel group rounded-[2rem] p-8 text-left transition-all duration-500 hover:border-[var(--color-accent-soft)]"
+                whileHover={{ y: -4 }}
+                data-clickable
+              >
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[rgb(201_184_154_/_0.15)] bg-[rgb(201_184_154_/_0.06)]">
+                  <span className="text-2xl">🎰</span>
+                </div>
+                <div className="editorial-annotation">Случайный выбор</div>
+                <h2 className="display-title mt-4 text-[clamp(2rem,4vw,3.5rem)] text-[var(--color-text)]">
+                  Рулетка
+                </h2>
+                <p className="mt-4 max-w-[28rem] text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                  Не можете выбрать? Доверьте решение рулетке — ИИ подберёт фильмы, а колесо выберет один.
+                </p>
+                <div className="mt-6 flex items-center gap-2 text-[0.68rem] uppercase tracking-[0.24em] text-[var(--color-text-muted)]">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[rgb(255_244_227_/_0.15)] text-[0.56rem]">🎲</span>
+                  крутите и смотрите
                 </div>
               </motion.button>
             </motion.div>
@@ -910,6 +942,15 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
                 </button>
               </div>
             </motion.div>
+          )}
+
+          {/* ─── Roulette ─── */}
+          {phase === 'roulette' && (
+            <RouletteWheel
+              key="roulette"
+              onFilmClick={onFilmClick}
+              onBack={reset}
+            />
           )}
 
           {/* ─── Error ─── */}

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { getSoundsEnabled, setSoundsEnabled } from '@/lib/sounds';
 
 interface ProfileSettingsProps {
   open: boolean;
@@ -18,6 +19,7 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [soundsOn, setSoundsOn] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -26,6 +28,7 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
       setAvatarPreview(null);
       setAvatarFile(null);
       setError('');
+      setSoundsOn(getSoundsEnabled());
     }
   }, [open, user]);
 
@@ -166,6 +169,35 @@ export default function ProfileSettings({ open, onClose }: ProfileSettingsProps)
                 className="mt-2 w-full rounded-[0.85rem] border border-[rgb(255_255_255_/_0.08)] bg-[rgb(255_255_255_/_0.04)] px-4 py-2.5 text-[0.88rem] text-[var(--color-text)] outline-none transition-colors placeholder:text-[var(--color-text-muted)] focus:border-[rgb(201_184_154_/_0.4)]"
                 placeholder="Ваше имя"
               />
+            </div>
+
+            {/* Sounds toggle */}
+            <div className="mt-5 flex items-center justify-between">
+              <label className="text-[0.55rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                Звуки интерфейса
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !soundsOn;
+                  setSoundsOn(next);
+                  setSoundsEnabled(next);
+                }}
+                className={`relative h-6 w-11 rounded-full border transition-colors duration-300 ${
+                  soundsOn
+                    ? 'border-[rgb(201_184_154_/_0.3)] bg-[rgb(201_184_154_/_0.2)]'
+                    : 'border-[rgb(255_255_255_/_0.08)] bg-[rgb(255_255_255_/_0.04)]'
+                }`}
+                data-clickable
+              >
+                <div
+                  className={`absolute top-0.5 h-4 w-4 rounded-full transition-all duration-300 ${
+                    soundsOn
+                      ? 'left-[1.35rem] bg-[var(--color-accent)]'
+                      : 'left-0.5 bg-[var(--color-text-muted)]'
+                  }`}
+                />
+              </button>
             </div>
 
             {/* Error */}

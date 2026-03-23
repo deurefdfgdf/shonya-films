@@ -40,6 +40,10 @@ export async function getProbeFilms(userQuery: string, watchedTitles?: string[],
   return callAiApi({ action: 'probeFilms', userQuery, watchedTitles, watchedReactions });
 }
 
+export async function getRouletteFilms(watchedTitles?: string[], watchedReactions?: WatchedReaction[]): Promise<{ films: AiFilmEntry[] | string[] }> {
+  return callAiApi({ action: 'roulette', watchedTitles, watchedReactions });
+}
+
 export async function getFinalRecommendations(
   userQuery: string,
   liked: string[],

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import BackgroundOrbs from '@/components/BackgroundOrbs';
 import Header from '@/components/Header';
+import { playClick, playNavigate, getSoundsEnabled } from '@/lib/sounds';
 import Hero from '@/components/Hero';
 
 import BentoGrid from '@/components/BentoGrid';
@@ -63,12 +64,26 @@ export default function Home() {
     void loadHome();
   }, [loadHome]);
 
+  // Global subtle click sound for interactive elements
+  useEffect(() => {
+    getSoundsEnabled(); // init from localStorage
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('[data-clickable]')) {
+        playClick();
+      }
+    };
+    document.addEventListener('click', handler, { passive: true });
+    return () => document.removeEventListener('click', handler);
+  }, []);
+
   const [navKey, setNavKey] = useState(0);
   const navigate = (nextSection: string) => {
     if (nextSection === section) {
       setNavKey((k) => k + 1);
     }
     setSection(nextSection);
+    playNavigate();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

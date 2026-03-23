@@ -78,6 +78,15 @@ ${(skipped as string[]).length > 0 ? `Не смотрел: ${(skipped as string[
 Верни JSON: { "films": [{ "name": "Название", "year": 2020, "reason": "причина" }, ...] }`,
       }];
     }
+    case 'roulette': {
+      return [{
+        role: 'user',
+        content: `${watchedNote}Пользователь хочет рулетку — случайный фильм на вечер.
+Подбери 8 ОЧЕНЬ разных фильмов: разные жанры, эпохи, страны. Включи неожиданные варианты.
+${watchedNote ? 'Учитывай вкус пользователя но предлагай и что-то новое неожиданное.' : ''}
+Верни JSON: { "films": [{ "name": "Название", "year": 2020 }, ...] }`,
+      }];
+    }
     default:
       throw new Error(`Unknown action: ${action}`);
   }
