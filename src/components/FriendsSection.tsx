@@ -366,8 +366,8 @@ export default function FriendsSection({ onFilmClick }: FriendsSectionProps) {
                             type="button"
                             onClick={() => setTab(t.id)}
                             className={`relative rounded-full border px-4 py-2 text-[0.62rem] uppercase tracking-[0.18em] transition-all ${tab === t.id
-                                    ? 'border-[rgb(201_184_154_/_0.3)] bg-[rgb(201_184_154_/_0.1)] text-[var(--color-accent)]'
-                                    : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
+                                ? 'border-[rgb(201_184_154_/_0.3)] bg-[rgb(201_184_154_/_0.1)] text-[var(--color-accent)]'
+                                : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]'
                                 }`}
                             data-clickable
                         >
@@ -663,6 +663,8 @@ function RequestsTab({
     onCancelSent: (id: string) => void;
 }) {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [confirmReject, setConfirmReject] = useState<string | null>(null);
+    const [confirmCancel, setConfirmCancel] = useState<string | null>(null);
 
     return (
         <div>
@@ -712,22 +714,43 @@ function RequestsTab({
                                 >
                                     {actionLoading === req.id ? '...' : 'Принять'}
                                 </button>
-                                <button
-                                    type="button"
-                                    disabled={actionLoading === req.id}
-                                    onClick={async () => { setActionLoading(req.id); await onReject(req.id); setActionLoading(null); }}
-                                    className="rounded-full border border-[var(--color-border)] px-3 py-1.5 text-[0.55rem] uppercase tracking-[0.14em] text-[var(--color-text-muted)] transition-all hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
-                                    data-clickable
-                                >
-                                    Отклонить
-                                </button>
+                                {confirmReject === req.id ? (
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            disabled={actionLoading === req.id}
+                                            onClick={async () => { setActionLoading(req.id); await onReject(req.id); setActionLoading(null); setConfirmReject(null); }}
+                                            className="rounded-full border border-[var(--color-danger)] bg-[rgb(184_114_114_/_0.1)] px-2.5 py-1.5 text-[0.5rem] uppercase tracking-[0.1em] text-[var(--color-danger)]"
+                                            data-clickable
+                                        >
+                                            Да
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setConfirmReject(null)}
+                                            className="rounded-full border border-[var(--color-border)] px-2.5 py-1.5 text-[0.5rem] uppercase tracking-[0.1em] text-[var(--color-text-muted)]"
+                                            data-clickable
+                                        >
+                                            Нет
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => setConfirmReject(req.id)}
+                                        className="rounded-full border border-[var(--color-border)] px-3 py-1.5 text-[0.55rem] uppercase tracking-[0.14em] text-[var(--color-text-muted)] transition-all hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
+                                        data-clickable
+                                    >
+                                        Отклонить
+                                    </button>
+                                )}
                             </div>
                         </motion.div>
                     ))}
                 </div>
             )}
 
-            {/* Sent — #17 — Cancel sent requests */}
+            {/* Sent */}
             <div className="mb-4 text-[0.55rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
                 Отправленные ({sent.length})
             </div>
@@ -743,14 +766,36 @@ function RequestsTab({
                                 </div>
                                 <div className="mt-0.5 text-[0.5rem] text-[var(--color-text-muted)]">{timeAgo(req.createdAt)}</div>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => onCancelSent(req.id)}
-                                className="rounded-full border border-[var(--color-border)] px-3 py-1.5 text-[0.55rem] uppercase tracking-[0.14em] text-[var(--color-text-muted)] transition-all hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
-                                data-clickable
-                            >
-                                Отменить
-                            </button>
+                            {confirmCancel === req.id ? (
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[0.5rem] text-[var(--color-text-muted)]">Отменить?</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => { onCancelSent(req.id); setConfirmCancel(null); }}
+                                        className="rounded-full border border-[var(--color-danger)] bg-[rgb(184_114_114_/_0.1)] px-2.5 py-1.5 text-[0.5rem] uppercase tracking-[0.1em] text-[var(--color-danger)]"
+                                        data-clickable
+                                    >
+                                        Да
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setConfirmCancel(null)}
+                                        className="rounded-full border border-[var(--color-border)] px-2.5 py-1.5 text-[0.5rem] uppercase tracking-[0.1em] text-[var(--color-text-muted)]"
+                                        data-clickable
+                                    >
+                                        Нет
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmCancel(req.id)}
+                                    className="rounded-full border border-[var(--color-border)] px-3 py-1.5 text-[0.55rem] uppercase tracking-[0.14em] text-[var(--color-text-muted)] transition-all hover:border-[var(--color-danger)] hover:text-[var(--color-danger)]"
+                                    data-clickable
+                                >
+                                    Отменить
+                                </button>
+                            )}
                         </div>
                     ))}
                 </div>
