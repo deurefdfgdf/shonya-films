@@ -31,25 +31,57 @@ export async function GET(request: NextRequest) {
         }
 
         const html = await response.text();
-        // Look for the standard video identifier in the raw JSON state pushed in YouTube's HTML
-        // usually in ytInitialData
-        const regex = /"videoId"\s*:\s*"([a-zA-Z0-9_-]{11})"/;
-        const match = html.match(regex);
 
-        if (match && match[1]) {
-            const id = match[1];
-            CACHE.set(q, { id, time: now });
-            return NextResponse.json({ id });
+        // Extract all possible video IDs from the page
+        const regex = /"videoId"\s*:\s*"([a-zA-Z0-9_-]{11})"/g;
+        const ids = new Set<string>();
+        let match;
+
+        while ((match = regex.exec(html)) !== null) {
+            ids.add(match[1]);
         }
 
-        // Try a simpler match if ytInitialData fails
-        const backupRegex = /\/watch\?v=([a-zA-Z0-9_-]{11})/;
-        const backupMatch = html.match(backupRegex);
+        // Fallback simple match if ytInitialData fails
+        if (ids.size === 0) {
+            const backupRegex = /\/watch\?v=([a-zA-Z0-9_-]{11})/g;
+            while ((match = backupRegex.exec(html)) !== null) {
+                ids.add(match[1]);
+            }
+        }
 
-        if (backupMatch && backupMatch[1]) {
-            const id = backupMatch[1];
-            CACHE.set(q, { id, time: now });
-            return NextResponse.json({ id });
+        const candidateIds = Array.from(ids).slice(0, 4);
+
+        // Fetch watch pages concurrently to check if embedding is allowed
+        const playabilityChecks = await Promise.all(
+            candidateIds.map(async (id) => {
+                try {
+                    const res = await fetch(`https://www.youtube.com/watch?v=${id}`, {
+                        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+                    });
+                    const pageHtml = await res.text();
+
+                    // We check if "playableInEmbed":true exists in the javascript configuration payload
+                    const isEmbeddable = pageHtml.includes('"playableInEmbed":true') || pageHtml.includes('"playableInEmbed": true');
+                    return { id, isEmbeddable };
+                } catch (e) {
+                    return { id, isEmbeddable: false };
+                }
+            })
+        );
+
+        // Return the first candidate that is explicitly embeddable
+        for (const { id, isEmbeddable } of playabilityChecks) {
+            if (isEmbeddable) {
+                CACHE.set(q, { id, time: now });
+                return NextResponse.json({ id });
+            }
+        }
+
+        // If none are verifiably embeddable, just fallback to the very first one as a last resort
+        if (candidateIds.length > 0) {
+            const fallbackId = candidateIds[0];
+            CACHE.set(q, { id: fallbackId, time: now });
+            return NextResponse.json({ id: fallbackId });
         }
 
         CACHE.set(q, { id: null, time: now });
