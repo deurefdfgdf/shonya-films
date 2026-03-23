@@ -645,10 +645,10 @@ function FilterPanel({
           {expanded && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
+              exit={{ overflow: 'hidden', height: 0, opacity: 0 }}
               transition={{ duration: 0.35, ease: EASE }}
-              className="overflow-hidden"
+              style={{ overflow: 'hidden' }}
             >
               <div className="glass-panel mt-2 rounded-[1.5rem] px-4 py-5 sm:px-6 sm:py-6">
                 <div className="grid gap-6 lg:grid-cols-2">

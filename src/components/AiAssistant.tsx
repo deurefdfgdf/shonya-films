@@ -394,12 +394,12 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
   );
   const [extractedTags, setExtractedTags] = useState<string[]>([]);
   const [probeFilms, setProbeFilms] = useState<Film[]>([]);
-  const [probeFilmNames, setProbeFilmNames] = useState<string[]>([]); // kept for refine step
+  const [probeFilmNames, setProbeFilmNames] = useState<Array<{name: string; year?: number} | string>>([]); // kept for refine step
   const [feedback, setFeedback] = useState<Record<number, 'liked' | 'disliked' | 'skipped'>>({});
   const [resultFilms, setResultFilms] = useState<Film[]>([]);
   const [resultReasons, setResultReasons] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
-  const { watchedFilmTitles } = useAuth();
+  const { watchedFilmTitles, watchedWithReactions } = useAuth();
 
   const toggleMood = (id: string) => {
     setSelectedMoods((prev) =>
@@ -438,7 +438,7 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
       );
       localStorage.setItem(STORAGE_KEYS.lastTags, JSON.stringify(selectedMoods));
 
-      const response = await getQuickRecommendations(allTags, watchedFilmTitles);
+      const response = await getQuickRecommendations(allTags, watchedFilmTitles, watchedWithReactions);
       const films = await resolveFilmNames(response.films);
       setResultFilms(films);
       setPhase('quick-results');
@@ -454,7 +454,7 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
     try {
       localStorage.setItem(STORAGE_KEYS.lastQuery, userQuery);
 
-      const response = await getProbeFilms(userQuery, watchedFilmTitles);
+      const response = await getProbeFilms(userQuery, watchedFilmTitles, watchedWithReactions);
       setExtractedTags(response.tags || []);
       setProbeFilmNames(response.films);
       const films = await resolveFilmNames(response.films);
@@ -483,14 +483,13 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
         else skipped.push(title);
       });
 
-      const response = await getFinalRecommendations(userQuery, liked, disliked, skipped, watchedFilmTitles);
-      const filmNames = response.films.map((f) => f.name);
+      const response = await getFinalRecommendations(userQuery, liked, disliked, skipped, watchedFilmTitles, watchedWithReactions);
       const reasons: Record<string, string> = {};
       for (const f of response.films) {
         reasons[f.name] = f.reason;
       }
 
-      const films = await resolveFilmNames(filmNames);
+      const films = await resolveFilmNames(response.films);
       setResultFilms(films);
 
       const resolvedReasons: Record<string, string> = {};

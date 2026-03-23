@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { KinoAPI, type Film, getFilmId, getFilmTitle } from '@/lib/api';
 import FilmCard from './FilmCard';
+import ProfileSettings from './ProfileSettings';
 import { GlowingEffect } from '@/components/ui/glowing-effect';
 import { ActivityChart } from '@/components/ui/activity-chart';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,7 @@ export default function ProfileSection({ onFilmClick }: ProfileSectionProps) {
   const [films, setFilms] = useState<Film[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeGenre, setActiveGenre] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Load film details for all watched films
   useEffect(() => {
@@ -214,9 +216,23 @@ export default function ProfileSection({ onFilmClick }: ProfileSectionProps) {
               )}
             </div>
             <div>
-              <h1 className="display-title text-[clamp(2rem,4vw,3.5rem)] text-[var(--color-text)]">
-                {user.displayName || 'Пользователь'}
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="display-title text-[clamp(2rem,4vw,3.5rem)] text-[var(--color-text)]">
+                  {user.displayName || 'Пользователь'}
+                </h1>
+                <button
+                  type="button"
+                  onClick={() => setSettingsOpen(true)}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-panel)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-panel-strong)] hover:text-[var(--color-text)]"
+                  aria-label="Настройки профиля"
+                  data-clickable
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4">
+                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" strokeLinecap="round" strokeLinejoin="round" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </button>
+              </div>
               <p className="mt-1 text-[0.72rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
                 {user.email}
               </p>
@@ -494,6 +510,8 @@ export default function ProfileSection({ onFilmClick }: ProfileSectionProps) {
           )}
         </motion.div>
       </section>
+
+      <ProfileSettings open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }

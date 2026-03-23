@@ -7,6 +7,8 @@ import {
   onAuthStateChanged,
   signInWithPopup,
   signOut as firebaseSignOut,
+  updateProfile,
+  reload,
 } from 'firebase/auth';
 import {
   collection,
@@ -17,7 +19,8 @@ import {
   onSnapshot,
   serverTimestamp,
 } from 'firebase/firestore';
-import { auth, googleProvider, db } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, googleProvider, db, storage } from '@/lib/firebase';
 
 interface WatchedFilm {
   title: string;
@@ -32,9 +35,12 @@ interface AuthContextValue {
   isWatched: (id: number) => boolean;
   toggleWatched: (id: number, title: string) => Promise<boolean>;
   setFilmReaction: (id: number, reaction: 'liked' | 'neutral' | 'disliked') => Promise<void>;
+  updateNickname: (name: string) => Promise<boolean>;
+  uploadAvatar: (file: File) => Promise<boolean>;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
   watchedFilmTitles: string[];
+  watchedWithReactions: Array<{ title: string; reaction?: string }>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -110,6 +116,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user]
   );
 
+  const updateNickname = useCallback(
+    async (name: string): Promise<boolean> => {
+      if (!user) return false;
+      try {
+        await updateProfile(user, { displayName: name });
+        await reload(user);
+        setUser({ ...user });
+        return true;
+      } catch (err) {
+        console.error('[updateNickname] error:', err);
+        return false;
+      }
+    },
+    [user]
+  );
+
+  const uploadAvatar = useCallback(
+    async (file: File): Promise<boolean> => {
+      if (!user) return false;
+      try {
+        const storageRef = ref(storage, `avatars/${user.uid}`);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        await updateProfile(user, { photoURL: url });
+        await reload(user);
+        setUser({ ...user });
+        return true;
+      } catch (err) {
+        console.error('[uploadAvatar] error:', err);
+        return false;
+      }
+    },
+    [user]
+  );
+
   const handleSignIn = useCallback(async () => {
     try {
       await signInWithPopup(auth, googleProvider);
@@ -127,6 +168,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [watchedFilms]
   );
 
+  const watchedWithReactions = useMemo(
+    () => Array.from(watchedFilms.values()).map((f) => ({
+      title: f.title,
+      reaction: f.reaction,
+    })).slice(0, 50),
+    [watchedFilms]
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -135,11 +184,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isWatched,
       toggleWatched,
       setFilmReaction,
+      updateNickname,
+      uploadAvatar,
       signIn: handleSignIn,
       signOut: handleSignOut,
       watchedFilmTitles,
+      watchedWithReactions,
     }),
-    [user, loading, watchedFilms, isWatched, toggleWatched, setFilmReaction, handleSignIn, handleSignOut, watchedFilmTitles]
+    [user, loading, watchedFilms, isWatched, toggleWatched, setFilmReaction, updateNickname, uploadAvatar, handleSignIn, handleSignOut, watchedFilmTitles, watchedWithReactions]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

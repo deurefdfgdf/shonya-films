@@ -3,10 +3,15 @@ import { NextRequest, NextResponse } from 'next/server';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const MODEL = 'stepfun-ai/step-3.5-flash:free';
 
-const SYSTEM_PROMPT = `Ты — эксперт по кино и сериалам. Отвечай ТОЛЬКО валидным JSON без markdown-блоков, без \`\`\`.
-Рекомендуй фильмы и сериалы всех стран и эпох.
-Названия фильмов давай на русском языке (как они известны в русскоязычном прокате).
-Не повторяй одни и те же фильмы. Будь разнообразен в рекомендациях.`;
+const SYSTEM_PROMPT = `Ты — кинокритик-эксперт с глубоким знанием мирового кинематографа. Отвечай ТОЛЬКО валидным JSON без markdown-блоков, без \`\`\`.
+
+Правила:
+- Названия фильмов давай на русском языке (как в русскоязычном прокате)
+- Для каждого фильма ОБЯЗАТЕЛЬНО указывай год выпуска
+- Рекомендуй разнообразно: разные страны, эпохи, режиссёры
+- Смешивай известные и малоизвестные фильмы (70% популярных, 30% артхаус/нишевых)
+- НЕ повторяй фильмы. Каждая рекомендация должна быть уникальной
+- Предпочитай фильмы с высоким рейтингом (7+ на Кинопоиске)`;
 
 interface AiMessage {
   role: 'system' | 'user';
@@ -15,9 +20,24 @@ interface AiMessage {
 
 function buildMessages(action: string, payload: Record<string, unknown>): AiMessage[] {
   const watchedTitles = payload.watchedTitles as string[] | undefined;
-  const watchedNote = watchedTitles && watchedTitles.length > 0
-    ? `\nПользователь уже смотрел: ${watchedTitles.join(', ')}.\nНЕ рекомендуй эти фильмы. Учитывай их при анализе вкуса.\n`
-    : '';
+  const watchedReactions = payload.watchedReactions as Array<{ title: string; reaction?: string }> | undefined;
+
+  let watchedNote = '';
+  if (watchedReactions && watchedReactions.length > 0) {
+    const liked = watchedReactions.filter((w) => w.reaction === 'liked').map((w) => w.title);
+    const neutral = watchedReactions.filter((w) => w.reaction === 'neutral').map((w) => w.title);
+    const disliked = watchedReactions.filter((w) => w.reaction === 'disliked').map((w) => w.title);
+    const noReaction = watchedReactions.filter((w) => !w.reaction).map((w) => w.title);
+
+    watchedNote = '\nИстория просмотров пользователя:\n';
+    if (liked.length > 0) watchedNote += `Очень понравились: ${liked.join(', ')}\n`;
+    if (neutral.length > 0) watchedNote += `Нормально отнёсся: ${neutral.join(', ')}\n`;
+    if (disliked.length > 0) watchedNote += `Не понравились: ${disliked.join(', ')}\n`;
+    if (noReaction.length > 0) watchedNote += `Смотрел (без оценки): ${noReaction.join(', ')}\n`;
+    watchedNote += 'НЕ рекомендуй эти фильмы. Используй эту историю чтобы понять вкус пользователя — рекомендуй похожее на то что понравилось, избегай похожего на то что не понравилось.\n';
+  } else if (watchedTitles && watchedTitles.length > 0) {
+    watchedNote = `\nПользователь уже смотрел: ${watchedTitles.join(', ')}.\nНЕ рекомендуй эти фильмы. Учитывай их при анализе вкуса.\n`;
+  }
 
   switch (action) {
     case 'quickRecommendations': {
@@ -25,8 +45,8 @@ function buildMessages(action: string, payload: Record<string, unknown>): AiMess
       return [{
         role: 'user',
         content: `${watchedNote}Пользователь хочет посмотреть кино с такими настроениями: ${tags.join(', ')}.
-Подбери 10 фильмов или сериалов которые идеально подходят.
-Верни JSON: { "films": ["название1", "название2", ...] }`,
+Подбери 12 фильмов или сериалов которые идеально подходят. Миксуй классику и современное кино.
+Верни JSON: { "films": [{ "name": "Название", "year": 2020 }, ...] }`,
       }];
     }
     case 'probeFilms': {
@@ -36,8 +56,8 @@ function buildMessages(action: string, payload: Record<string, unknown>): AiMess
         content: `${watchedNote}Пользователь описал что хочет посмотреть: "${userQuery}"
 
 Проанализируй запрос. Извлеки 3-6 ключевых тегов (жанр, настроение, тип персонажа, атмосфера).
-Предложи 10 пробных фильмов/сериалов чтобы понять вкус пользователя — выбирай разнообразные, от очевидных до неожиданных.
-Верни JSON: { "tags": ["тег1", "тег2", ...], "films": ["название1", "название2", ...] }`,
+Предложи 10 пробных фильмов/сериалов чтобы понять вкус пользователя — выбирай разнообразные, от очевидных до неожиданных. Включи фильмы разных десятилетий и стран.
+Верни JSON: { "tags": ["тег1", ...], "films": [{ "name": "Название", "year": 2020 }, ...] }`,
       }];
     }
     case 'finalRecommendations': {
@@ -53,9 +73,9 @@ ${(liked as string[]).length > 0 ? `Понравились: ${(liked as string[]
 ${(disliked as string[]).length > 0 ? `Не понравились: ${(disliked as string[]).join(', ')}` : ''}
 ${(skipped as string[]).length > 0 ? `Не смотрел: ${(skipped as string[]).join(', ')}` : ''}
 
-На основе этой обратной связи подбери 10 финальных рекомендаций. Учитывай что понравилось и НЕ предлагай то что не зашло и похожее на это.
-Для каждого фильма укажи короткую причину (2-4 слова) почему он подходит.
-Верни JSON: { "films": [{ "name": "Название", "reason": "причина" }, ...] }`,
+Проанализируй что общего у понравившихся фильмов (стиль, атмосфера, темы). Подбери 12 финальных рекомендаций. НЕ предлагай фильмы похожие на те что не понравились.
+Для каждого фильма укажи короткую причину (2-5 слов) почему он подходит именно этому пользователю.
+Верни JSON: { "films": [{ "name": "Название", "year": 2020, "reason": "причина" }, ...] }`,
       }];
     }
     default:
@@ -95,8 +115,8 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         model: MODEL,
         messages,
-        temperature: 0.85,
-        max_tokens: 1500,
+        temperature: 0.7,
+        max_tokens: 2000,
       }),
     });
 
