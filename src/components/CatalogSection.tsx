@@ -105,7 +105,7 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
   }, [defaultYearRange]);
 
   useEffect(() => {
-    KinoAPI.getFilters().then(setFilters).catch(() => {});
+    KinoAPI.getFilters().then(setFilters).catch(() => { });
   }, []);
 
   const orderedCountries = useMemo(
@@ -128,10 +128,10 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
 
   const genreOptions = useMemo<Option[]>(() => {
     const fallbackGenres = [
-      'аниме','биография','боевик','вестерн','военный','детектив','детский',
-      'документальный','драма','история','комедия','короткометражка','криминал',
-      'мелодрама','музыка','мультфильм','мюзикл','приключения','семейный',
-      'спорт','триллер','ужасы','фантастика','фильм-нуар','фэнтези',
+      'аниме', 'биография', 'боевик', 'вестерн', 'военный', 'детектив', 'детский',
+      'документальный', 'драма', 'история', 'комедия', 'короткометражка', 'криминал',
+      'мелодрама', 'музыка', 'мультфильм', 'мюзикл', 'приключения', 'семейный',
+      'спорт', 'триллер', 'ужасы', 'фантастика', 'фильм-нуар', 'фэнтези',
     ];
     const apiGenres = (filters?.genres || []).map((item) => item.genre).filter(Boolean);
     const filmGenres = rawFilms.flatMap((film) => film.genres?.map((g) => g.genre) || []).filter(Boolean);
@@ -300,10 +300,11 @@ export default function CatalogSection({ type, onFilmClick }: CatalogSectionProp
         return true;
       });
 
-    // Sort base and extra batches independently so load-more never reorders existing films
+    // Apply sorting only to the base batch. Newly loaded films (extra) are just appended
+    // without sorting so they don't cause sudden visual jumps as the user scrolls.
     const base = applyFilters(rawFilms.slice(0, baseFilmsCount));
     const extra = applyFilters(rawFilms.slice(baseFilmsCount));
-    return [...sortFilms(base, order), ...sortFilms(extra, order)];
+    return [...sortFilms(base, order), ...extra];
   }, [defaultYearRange, order, rawFilms, baseFilmsCount, selectedCountries, selectedGenres, yearRange]);
 
   const loadMorePremieres = async () => {
@@ -532,9 +533,9 @@ function FilterPanel({
     })),
     ...(hasYearFilter
       ? [{
-          label: `${yearRange[0]}–${yearRange[1]}`,
-          onRemove: () => setYearRange(defaultYearRange),
-        }]
+        label: `${yearRange[0]}–${yearRange[1]}`,
+        onRemove: () => setYearRange(defaultYearRange),
+      }]
       : []),
   ];
 

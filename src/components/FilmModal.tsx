@@ -31,7 +31,7 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
   const [film, setFilm] = useState<Film | null>(null);
   const [staff, setStaff] = useState<StaffPerson[]>([]);
   const [similar, setSimilar] = useState<Film[]>([]);
-  const [trailerYtId, setTrailerYtId] = useState<string | null>(null);
+  const [trailerSrc, setTrailerSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [promptStep, setPromptStep] = useState<'watched' | 'reaction' | null>(null);
   const [writeError, setWriteError] = useState(false);
@@ -45,7 +45,7 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
     setLoading(true);
     setFilm(null);
     setSimilar([]);
-    setTrailerYtId(null);
+    setTrailerSrc(null);
     setPromptStep(null);
     setWriteError(false);
     clearTimeout(promptTimerRef.current);
@@ -66,7 +66,9 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
 
     KinoAPI.getFilmVideos(filmId)
       .then((data) => {
-        // Find a YouTube trailer
+        // Extract video source
+        let finalSrc: string | null = null;
+
         const yt = data.items?.find(
           (v) =>
             v.site?.toUpperCase() === 'YOUTUBE' ||
@@ -76,22 +78,35 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
 
         if (yt) {
           const ytUrl = yt.url;
-          // Extract video ID from youtube URL
           const match = ytUrl.match(
             /(?:v=|\/embed\/|\/v\/|youtu\.be\/|\/watch\?v=)([a-zA-Z0-9_-]{11})/
           );
           if (match && match[1]) {
-            setTrailerYtId(match[1]);
+            finalSrc = `https://www.youtube.com/embed/${match[1]}?rel=0&modestbranding=1`;
           } else {
             try {
               const urlObj = new URL(ytUrl);
               const v = urlObj.searchParams.get('v');
-              if (v) setTrailerYtId(v);
+              if (v) finalSrc = `https://www.youtube.com/embed/${v}?rel=0&modestbranding=1`;
             } catch (e) {
               // Ignore invalid urls
             }
           }
         }
+
+        if (!finalSrc) {
+          const kpw = data.items?.find((v) => v.site?.toUpperCase() === 'KINOPOISK_WIDGET');
+          if (kpw) {
+            finalSrc = kpw.url;
+          }
+        }
+
+        if (!finalSrc && data.items?.length) {
+          const alt = data.items.find(v => v.url && (v.type === 'TRAILER' || v.type === 'TEASER'));
+          if (alt) finalSrc = alt.url;
+        }
+
+        setTrailerSrc(finalSrc);
       })
       .catch(() => { });
   }, [filmId]);
@@ -175,7 +190,7 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
           />
 
           <motion.div
-            className="relative z-10 w-full max-w-[1120px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[rgb(10_10_10_/_0.97)] shadow-[var(--shadow-strong)]"
+            className="relative z-10 flex flex-col w-full max-w-[1120px] max-h-[calc(100svh-2.5rem)] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[rgb(10_10_10_/_0.97)] shadow-[var(--shadow-strong)]"
             initial={{ opacity: 0, y: 24, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.98 }}
@@ -202,13 +217,13 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                 </div>
               </div>
             ) : film ? (
-              <div className="flex flex-col lg:grid max-h-[calc(100svh-2rem)] lg:grid-cols-[minmax(260px,0.68fr)_minmax(0,1.32fr)] overflow-hidden">
+              <div className="flex flex-col lg:flex-row flex-1 min-h-0 min-w-0">
                 {/* Poster side */}
-                <div className="relative max-h-[13rem] overflow-hidden border-b border-[var(--color-border)] lg:max-h-[calc(100svh-2rem)] lg:border-b-0 lg:border-r">
+                <div className="relative w-full lg:w-[34%] flex-shrink-0 h-[14rem] lg:h-auto border-b border-[var(--color-border)] lg:border-b-0 lg:border-r">
                   {posterUrl ? (
                     <img src={posterUrl} alt={title} className="h-full w-full object-cover" />
                   ) : (
-                    <div className="flex h-full min-h-[18rem] items-center justify-center text-[0.6rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+                    <div className="flex h-full min-h-[14rem] items-center justify-center text-[0.6rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
                       Нет постера
                     </div>
                   )}
@@ -335,16 +350,17 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                       )}
 
                       {/* Mini Trailer */}
-                      {trailerYtId && (
+                      {trailerSrc && (
                         <div className="mt-4 pt-4 border-t border-[rgb(255_255_255_/_0.04)]">
                           <div className="mb-2.5 text-[0.55rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
                             Трейлер
                           </div>
                           <div className="overflow-hidden rounded-[var(--radius-md)] bg-black" style={{ aspectRatio: '16/9' }}>
                             <iframe
-                              src={`https://www.youtube.com/embed/${trailerYtId}?rel=0&modestbranding=1`}
+                              src={trailerSrc}
                               allow="encrypted-media; fullscreen"
                               allowFullScreen
+                              sandbox="allow-scripts allow-same-origin allow-presentation"
                               className="h-full w-full border-0"
                               title="Трейлер"
                             />
