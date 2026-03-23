@@ -350,17 +350,16 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                       )}
 
                       {/* Mini Trailer */}
-                      {trailerSrc && (
+                      {(trailerSrc || film) && (
                         <div className="mt-4 pt-4 border-t border-[rgb(255_255_255_/_0.04)]">
                           <div className="mb-2.5 text-[0.55rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
                             Трейлер
                           </div>
                           <div className="overflow-hidden rounded-[var(--radius-md)] bg-black" style={{ aspectRatio: '16/9' }}>
                             <iframe
-                              src={trailerSrc}
+                              src={trailerSrc || `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(`${title} ${film?.year || ''} трейлер на русском`)}`}
                               allow="encrypted-media; fullscreen"
                               allowFullScreen
-                              sandbox="allow-scripts allow-same-origin allow-presentation"
                               className="h-full w-full border-0"
                               title="Трейлер"
                             />
