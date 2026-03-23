@@ -50,23 +50,23 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
     setWriteError(false);
     clearTimeout(promptTimerRef.current);
 
-    Promise.all([
-      KinoAPI.getFilmById(filmId),
-      KinoAPI.getFilmStaff(filmId).catch(() => []),
-    ])
-      .then(([filmData, staffData]) => {
+    const loadData = async () => {
+      try {
+        const [filmData, staffData] = await Promise.all([
+          KinoAPI.getFilmById(filmId),
+          KinoAPI.getFilmStaff(filmId).catch(() => []),
+        ]);
+
         setFilm(filmData);
         setStaff(Array.isArray(staffData) ? staffData : []);
-      })
-      .finally(() => setLoading(false));
 
-    KinoAPI.getSimilarFilms(filmId)
-      .then((data) => setSimilar(data.items || []))
-      .catch(() => { });
+        // Load similar non-blocking
+        KinoAPI.getSimilarFilms(filmId)
+          .then((data) => setSimilar(data.items || []))
+          .catch(() => { });
 
-    KinoAPI.getFilmVideos(filmId)
-      .then((data) => {
-        // Extract video source
+        // Load videos
+        const data = await KinoAPI.getFilmVideos(filmId).catch(() => ({ items: [] }));
         let finalSrc: string | null = null;
 
         const yt = data.items?.find(
@@ -102,13 +102,30 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
         }
 
         if (!finalSrc && data.items?.length) {
-          const alt = data.items.find(v => v.url && (v.type === 'TRAILER' || v.type === 'TEASER'));
+          const alt = data.items.find((v) => v.url && (v.type === 'TRAILER' || v.type === 'TEASER'));
           if (alt) finalSrc = alt.url;
         }
 
-        setTrailerSrc(finalSrc);
-      })
-      .catch(() => { });
+        if (finalSrc) {
+          setTrailerSrc(finalSrc);
+        } else {
+          // Fallback to our custom YouTube search scraper API
+          const query = `${getFilmTitle(filmData)} ${filmData?.year || ''} трейлер на русском`.trim();
+          fetch(`/api/trailer?q=${encodeURIComponent(query)}`)
+            .then((res) => res.json())
+            .then((val) => {
+              if (val.id) {
+                setTrailerSrc(`https://www.youtube.com/embed/${val.id}?rel=0&modestbranding=1`);
+              }
+            })
+            .catch(() => { });
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, [filmId]);
 
   useEffect(() => {
@@ -350,14 +367,14 @@ export default function FilmModal({ filmId, onClose, onFilmClick }: FilmModalPro
                       )}
 
                       {/* Mini Trailer */}
-                      {(trailerSrc || film) && (
+                      {trailerSrc && (
                         <div className="mt-4 pt-4 border-t border-[rgb(255_255_255_/_0.04)]">
                           <div className="mb-2.5 text-[0.55rem] uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
                             Трейлер
                           </div>
                           <div className="overflow-hidden rounded-[var(--radius-md)] bg-black" style={{ aspectRatio: '16/9' }}>
                             <iframe
-                              src={trailerSrc || `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(`${title} ${film?.year || ''} трейлер на русском`)}`}
+                              src={trailerSrc}
                               allow="encrypted-media; fullscreen"
                               allowFullScreen
                               className="h-full w-full border-0"
