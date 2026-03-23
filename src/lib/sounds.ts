@@ -115,3 +115,9 @@ export function playWin() {
 export function playError() {
   playTone(220, 0.15, 0.03, 'triangle');
 }
+
+/** Notification — soft bell-like two-tone chime */
+export function playNotification() {
+  playTone(880, 0.12, 0.025, 'sine');
+  setTimeout(() => playTone(1100, 0.18, 0.02, 'sine'), 120);
+}

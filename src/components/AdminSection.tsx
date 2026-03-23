@@ -136,6 +136,13 @@ function UsersTab() {
         bannedUsers: data.bannedUsers || [],
         aiBlockedUsers: data.aiBlockedUsers || [],
       });
+    } else {
+      // Initialize admin/settings document if it doesn't exist
+      try {
+        await setDoc(doc(db, 'admin', 'settings'), { bannedUsers: [], aiBlockedUsers: [] });
+      } catch (err) {
+        console.error('[AdminSection] Failed to init admin/settings:', err);
+      }
     }
   }, []);
 

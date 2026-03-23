@@ -19,6 +19,7 @@ import AiAssistant from '@/components/AiAssistant';
 import ProfileSection from '@/components/ProfileSection';
 import AdminSection from '@/components/AdminSection';
 import FriendsSection from '@/components/FriendsSection';
+import AdminNotifications from '@/components/AdminNotifications';
 import { KinoAPI, type Film, filterFilms } from '@/lib/api';
 
 export default function Home() {
@@ -165,6 +166,8 @@ export default function Home() {
           onClose={closeModal}
           onFilmClick={openModal}
         />
+
+        <AdminNotifications />
       </motion.div>
     </>
   );

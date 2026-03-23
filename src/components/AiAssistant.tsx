@@ -402,7 +402,7 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
   const [resultFilms, setResultFilms] = useState<Film[]>([]);
   const [resultReasons, setResultReasons] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
-  const { watchedFilmTitles, watchedWithReactions } = useAuth();
+  const { watchedFilmTitles, watchedWithReactions, isAIBlocked } = useAuth();
 
   const toggleMood = (id: string) => {
     const removing = selectedMoods.includes(id);
@@ -586,8 +586,33 @@ export default function AiAssistant({ onFilmClick }: AiAssistantProps) {
       {/* Content */}
       <section className="section-shell mt-12">
         <AnimatePresence mode="wait">
+          {/* ─── AI Blocked ─── */}
+          {phase === 'mode-select' && isAIBlocked && (
+            <motion.div
+              key="ai-blocked"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4, ease: EASE }}
+              className="flex flex-col items-center justify-center py-20 text-center"
+            >
+              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-[rgb(184_114_114_/_0.3)] bg-[rgb(184_114_114_/_0.08)]">
+                <svg viewBox="0 0 24 24" fill="none" stroke="rgb(184 114 114)" strokeWidth="1.5" className="h-10 w-10">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M4.93 4.93l14.14 14.14" strokeLinecap="round" />
+                </svg>
+              </div>
+              <h2 className="display-title text-[clamp(1.5rem,3vw,2.5rem)] text-[var(--color-text)]">
+                Доступ ограничен
+              </h2>
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-[var(--color-text-secondary)]">
+                ИИ-подбор фильмов временно заблокирован администратором. Вы по-прежнему можете пользоваться каталогом и поиском.
+              </p>
+            </motion.div>
+          )}
+
           {/* ─── Mode Select ─── */}
-          {phase === 'mode-select' && (
+          {phase === 'mode-select' && !isAIBlocked && (
             <motion.div
               key="mode-select"
               initial={{ opacity: 0, y: 20 }}

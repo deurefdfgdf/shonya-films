@@ -113,8 +113,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Check if user is banned or AI-blocked
-  const checkAdminSettings = useCallback(async (uid: string) => {
+  // One-time ban check on login (returns true if banned)
+  const checkBanOnLogin = useCallback(async (uid: string): Promise<boolean> => {
     try {
       const settingsSnap = await getDoc(doc(db, 'admin', 'settings'));
       if (settingsSnap.exists()) {
@@ -125,8 +125,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAIBlocked(aiBlocked);
         return banned;
       }
-    } catch {
-      // Admin settings might not exist yet or permission denied
+    } catch (err) {
+      console.error('[checkBanOnLogin] error:', err);
     }
     return false;
   }, []);
@@ -134,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (u) {
-        const banned = await checkAdminSettings(u.uid);
+        const banned = await checkBanOnLogin(u.uid);
         if (banned) {
           await firebaseSignOut(auth);
           setUser(null);
@@ -153,7 +153,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
     return unsub;
-  }, [syncUserProfile, checkAdminSettings]);
+  }, [syncUserProfile, checkBanOnLogin]);
+
+  // Real-time listener for admin/settings (ban/AI-block changes apply instantly)
+  useEffect(() => {
+    if (!user) return;
+    const unsub = onSnapshot(
+      doc(db, 'admin', 'settings'),
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          const banned = (data.bannedUsers as string[] || []).includes(user.uid);
+          const aiBlocked = (data.aiBlockedUsers as string[] || []).includes(user.uid);
+          setIsBanned(banned);
+          setIsAIBlocked(aiBlocked);
+          if (banned) {
+            firebaseSignOut(auth);
+          }
+        }
+      },
+      () => { /* permission denied or doc doesn't exist */ }
+    );
+    return unsub;
+  }, [user]);
 
   // Listen to notifications for this user (written by admin to user's subcollection)
   useEffect(() => {
